@@ -85,15 +85,20 @@ app.use((err, req, res, next) => {
     });
 });
 
-// 서버 시작
-app.listen(PORT, () => {
-    console.log(`
-    ╔════════════════════════════════════════╗
-    ║   유니크 특허 현황 조회 시스템          ║
-    ╠════════════════════════════════════════╣
-    ║   환경: ${process.env.NODE_ENV.padEnd(27)}  ║
-    ║   서버: http://localhost:${PORT}          ║
-    ║   시간: ${new Date().toLocaleString('ko-KR').padEnd(27)}  ║
-    ╚════════════════════════════════════════╝
-    `);
-});
+// 서버 시작 (로컬 개발용)
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`
+        ╔════════════════════════════════════════╗
+        ║   유니크 특허 현황 조회 시스템          ║
+        ╠════════════════════════════════════════╣
+        ║   환경: ${process.env.NODE_ENV.padEnd(27)}  ║
+        ║   서버: http://localhost:${PORT}          ║
+        ║   시간: ${new Date().toLocaleString('ko-KR').padEnd(27)}  ║
+        ╚════════════════════════════════════════╝
+        `);
+    });
+}
+
+// Vercel용 export
+module.exports = app;
