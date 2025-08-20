@@ -15,8 +15,16 @@ router.post('/search-registered', async (req, res) => {
             });
         }
 
-        // 고객번호 형식 정리
-        const cleanedNumber = customerNumber.replace(/-/g, '');
+        // 고객번호 검증 (12자리 숫자)
+        const cleanedNumber = customerNumber.trim();
+        
+        // 12자리 숫자 검증
+        if (!/^\d{12}$/.test(cleanedNumber)) {
+            return res.status(400).json({
+                success: false,
+                error: '고객번호는 12자리 숫자여야 합니다.'
+            });
+        }
         
         // 등록특허 정보 조회
         const result = await patentService.searchRegisteredPatents(cleanedNumber);
@@ -44,7 +52,7 @@ router.post('/search-registered', async (req, res) => {
     }
 });
 
-// 출원특허 검색 API
+// 출원특허 검색 API (개선된 버전)
 router.post('/search-application', async (req, res) => {
     try {
         const { customerNumber } = req.body;
@@ -56,11 +64,58 @@ router.post('/search-application', async (req, res) => {
             });
         }
 
-        // 고객번호 형식 정리
-        const cleanedNumber = customerNumber.replace(/-/g, '');
+        // 고객번호 검증 (12자리 숫자)
+        const cleanedNumber = customerNumber.trim();
         
-        // 출원특허 정보 조회
+        // 12자리 숫자 검증
+        if (!/^\d{12}$/.test(cleanedNumber)) {
+            return res.status(400).json({
+                success: false,
+                error: '고객번호는 12자리 숫자여야 합니다.'
+            });
+        }
+        
+        // 1단계: 기본 출원특허 정보 조회
         const result = await patentService.searchApplicationPatents(cleanedNumber);
+        
+        // 2단계: 각 출원번호에 대해 상세 정보 조회
+        if (result.patents && result.patents.length > 0) {
+            const applicationNumbers = result.patents.map(p => p.applicationNumber).filter(num => num && num !== '-');
+            
+            if (applicationNumbers.length > 0) {
+                try {
+                    // 상세 정보 조회
+                    const detailsPromises = applicationNumbers.map(async (appNumber) => {
+                        try {
+                            return await patentService.getPatentDetailsByApplicationNumber(appNumber);
+                        } catch (error) {
+                            console.error(`출원번호 ${appNumber} 상세 정보 조회 오류:`, error.message);
+                            return null;
+                        }
+                    });
+                    
+                    const details = await Promise.all(detailsPromises);
+                    
+                    // 상세 정보를 기본 특허 정보에 병합
+                    result.patents = result.patents.map((patent, index) => {
+                        const detail = details[index];
+                        if (detail) {
+                            return {
+                                ...patent,
+                                registrationNumber: detail.registrationNumber || patent.registrationNumber,
+                                registrationDate: detail.registrationDate || patent.registrationDate,
+                                expirationDate: detail.expirationDate || patent.expirationDate,
+                                claimCount: detail.claimCount || patent.claimCount
+                            };
+                        }
+                        return patent;
+                    });
+                } catch (detailError) {
+                    console.error('상세 정보 조회 중 오류:', detailError);
+                    // 상세 정보 조회 실패는 무시하고 기본 정보만 반환
+                }
+            }
+        }
         
         res.json({
             success: true,

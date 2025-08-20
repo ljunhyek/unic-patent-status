@@ -17,11 +17,12 @@
                         id="customerNumber" 
                         name="customerNumber" 
                         class="form-input"
-                        placeholder="예: <%= defaultCustomerNumber %>"
-                        value="<%= defaultCustomerNumber %>"
+                        placeholder="예: 120190612244"
+                        maxlength="12"
+                        pattern="[0-9]{12}"
                         required
                     >
-                    <div class="form-hint">하이픈(-) 포함 또는 제외하고 입력 가능</div>
+                    <div class="form-hint">12자리 숫자 입력하세요</div>
                 </div>
                 <button type="submit" class="btn btn-primary" id="searchBtn">
                     🔍 검색하기
@@ -116,10 +117,9 @@ document.getElementById('searchForm').addEventListener('submit', async function(
     const searchBtn = document.getElementById('searchBtn');
     const originalText = searchBtn.innerHTML;
     
-    // 입력 검증
-    const validationError = validateCustomerNumber(customerNumber);
-    if (validationError) {
-        showError(validationError);
+    // 입력 검증 (12자리 숫자)
+    if (!/^\d{12}$/.test(customerNumber)) {
+        showError('고객번호는 12자리 숫자여야 합니다.');
         return;
     }
     

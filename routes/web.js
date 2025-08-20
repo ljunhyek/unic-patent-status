@@ -5,24 +5,21 @@ const router = express.Router();
 // 메인 페이지 (등록특허 현황)
 router.get('/', (req, res) => {
     res.render('registered', {
-        title: '등록특허 현황',
-        defaultCustomerNumber: process.env.DEFAULT_CUSTOMER_NUMBER || '120190612244'
+        title: '등록특허 현황'
     });
 });
 
 // 등록특허 현황
 router.get('/registered', (req, res) => {
     res.render('registered', {
-        title: '등록특허 현황',
-        defaultCustomerNumber: process.env.DEFAULT_CUSTOMER_NUMBER || '120190612244'
+        title: '등록특허 현황'
     });
 });
 
 // 출원특허 현황
 router.get('/application', (req, res) => {
     res.render('application', {
-        title: '출원특허 현황',
-        defaultCustomerNumber: process.env.DEFAULT_CUSTOMER_NUMBER || '120190612244'
+        title: '출원특허 현황'
     });
 });
 

@@ -17,11 +17,12 @@
                         id="customerNumber" 
                         name="customerNumber" 
                         class="form-input"
-                        placeholder="예: <%= defaultCustomerNumber %>"
-                        value="<%= defaultCustomerNumber %>"
+                        placeholder="예: 120190612244"
+                        maxlength="12"
+                        pattern="[0-9]{12}"
                         required
                     >
-                    <div class="form-hint">하이픈(-) 포함 또는 제외하고 입력 가능</div>
+                    <div class="form-hint">12자리 숫자 입력하세요</div>
                 </div>
                 <button type="submit" class="btn btn-primary" id="searchBtn">
                     🔍 검색하기
@@ -58,15 +59,19 @@
                     <thead>
                         <tr>
                             <th>출원번호</th>
+                            <th>등록번호</th>
                             <th>출원인</th>
                             <th>발명자</th>
                             <th>출원일</th>
-                            <th>공개일</th>
-                            <th>발명의명칭</th>
-                            <th>청구항수</th>
-                            <th>심사상태</th>
-                            <th>진행상태</th>
-                            <th>IPC코드</th>
+                            <th>우선권 출원번호</th>
+                            <th>PCT마감일</th>
+                            <th>발명의 명칭</th>
+                            <th>의견통지서</th>
+                            <th>현재상태</th>
+                            <th>공개전문</th>
+                            <th>공고전문</th>
+                            <th>PCT출원번호</th>
+                            <th>Family특허번호</th>
                         </tr>
                     </thead>
                     <tbody id="patentTableBody">
@@ -98,10 +103,9 @@ document.getElementById('searchForm').addEventListener('submit', async function(
     const searchBtn = document.getElementById('searchBtn');
     const originalText = searchBtn.innerHTML;
     
-    // 입력 검증
-    const validationError = validateCustomerNumber(customerNumber);
-    if (validationError) {
-        showError(validationError);
+    // 입력 검증 (12자리 숫자)
+    if (!/^\d{12}$/.test(customerNumber)) {
+        showError('고객번호는 12자리 숫자여야 합니다.');
         return;
     }
     
@@ -138,6 +142,7 @@ document.getElementById('searchForm').addEventListener('submit', async function(
 function displayResults(data) {
     currentPatents = data.patents || [];
     
+    
     document.getElementById('resultCustomerNumber').textContent = data.customerNumber;
     document.getElementById('resultApplicantName').textContent = data.applicantName;
     document.getElementById('resultTotalCount').textContent = data.totalCount;
@@ -162,15 +167,19 @@ function displayResults(data) {
             
             row.innerHTML = `
                 <td>${patent.applicationNumber}</td>
+                <td>${patent.registrationNumber || '-'}</td>
                 <td>${patent.applicantName}</td>
                 <td>${patent.inventorName}</td>
                 <td>${formatDate(patent.applicationDate)}</td>
-                <td>${formatDate(patent.publicationDate)}</td>
+                <td>${patent.priorityNumber || '-'}</td>
+                <td>${formatDate(patent.pctDeadline) || '-'}</td>
                 <td style="max-width: 300px; word-break: break-word;">${patent.inventionTitle}</td>
-                <td>${patent.claimCount}</td>
-                <td>${statusBadge}</td>
-                <td>${progressBadge}</td>
-                <td>${patent.ipcCode}</td>
+                <td>${patent.opinionNotice || '-'}</td>
+                <td>${patent.currentStatus || '심사중'}</td>
+                <td>${createFileLink(patent.publicationFullText, patent.publicationDocName, '공개전문')}</td>
+                <td>${createFileLink(patent.announcementFullText, patent.announcementDocName, '공고전문')}</td>
+                <td>${patent.pctApplicationNumber || '-'}</td>
+                <td>${patent.familyPatentNumber || '-'}</td>
             `;
             tableBody.appendChild(row);
         });
@@ -203,6 +212,28 @@ function getProgressBadge(status) {
 // 결과 숨기기
 function hideResults() {
     document.getElementById('resultsSection').style.display = 'none';
+}
+
+// 파일 링크 생성 함수 (개선된 버전)
+function createFileLink(filePath, docName, linkText) {
+    // 파일 경로가 없거나 기본값인 경우
+    if (!filePath || filePath === '-' || filePath.trim() === '') {
+        return `<span class="no-file">-</span>`;
+    }
+    
+    // URL이 유효한지 확인
+    try {
+        const url = new URL(filePath);
+        const displayName = docName && docName !== '-' ? docName : linkText;
+        
+        return `<a href="${filePath}" target="_blank" class="file-link" title="${displayName}">
+                    <span class="file-icon">📄</span> ${linkText}
+                </a>`;
+    } catch (e) {
+        // URL이 유효하지 않은 경우
+        console.warn('유효하지 않은 파일 URL:', filePath);
+        return `<span class="invalid-file" title="파일 URL이 유효하지 않습니다">❌ ${linkText}</span>`;
+    }
 }
 
 // 엑셀 다운로드
