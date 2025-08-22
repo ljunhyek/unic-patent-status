@@ -288,10 +288,153 @@ body {
     padding: 1rem;
     color: var(--text-color);
     border-bottom: 1px solid var(--border-color);
+    text-decoration: none;
+    vertical-align: top;
 }
 
 .patent-table tbody tr:hover {
     background: #f9fafb;
+}
+
+/* 테이블 내 모든 텍스트에서 밑줄 제거 */
+.patent-table td * {
+    text-decoration: none !important;
+    border-bottom: none !important;
+}
+
+.patent-table .applicant-name,
+.patent-table .invention-title {
+    text-decoration: none !important;
+    border-bottom: none !important;
+}
+
+/* 텍스트 자연스러운 2줄 표시 */
+.text-natural-2lines {
+    line-height: 1.4;
+    max-height: 2.8em; /* line-height * 2 */
+    overflow: hidden;
+    word-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+    display: block;
+    text-decoration: none !important;
+}
+
+/* 발명의 명칭 자연스러운 멀티라인 표시 */
+.invention-title-natural {
+    max-width: 500px;
+    min-width: 300px;
+    text-decoration: none !important;
+    line-height: 1.4;
+    word-wrap: break-word;
+    word-break: break-word;
+    vertical-align: top;
+}
+
+/* 출원인명 스타일 개선 */
+.applicant-name-clean {
+    text-decoration: none !important;
+    border-bottom: none !important;
+    line-height: 1.4;
+    max-height: 2.8em;
+    overflow: hidden;
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+/* 특허번호 자연스러운 줄바꿈 */
+.patent-number {
+    line-height: 1.3;
+    max-height: 2.6em; /* line-height * 2 */
+    overflow: hidden;
+    word-break: break-all;
+    hyphens: none;
+    max-width: 120px;
+    min-width: 100px;
+}
+
+.invention-title {
+    max-width: 500px;
+    min-width: 300px;
+}
+
+.applicant-name {
+    max-width: 250px;
+    min-width: 150px;
+    text-decoration: none !important;
+    border-bottom: none !important;
+}
+
+/* 페이지네이션 */
+.pagination-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: var(--bg-white);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.pagination-info {
+    color: var(--text-color);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.pagination-controls {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.pagination-btn {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    background: var(--bg-white);
+    color: var(--text-color);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-width: 2.5rem;
+}
+
+.pagination-btn:hover:not(.disabled):not(.active) {
+    background: #f3f4f6;
+    border-color: var(--primary-color);
+}
+
+.pagination-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.pagination-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f9fafb;
+    color: #9ca3af;
+}
+
+@media (max-width: 768px) {
+    .pagination-container {
+        gap: 0.5rem;
+        text-align: center;
+    }
+    
+    .pagination-controls {
+        justify-content: center;
+    }
+    
+    .pagination-btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.8rem;
+        min-width: 2rem;
+    }
 }
 
 /* 상태 배지 */

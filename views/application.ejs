@@ -48,7 +48,10 @@
                     </div>
                 </div>
                 <div class="action-buttons">
-                    <button type="button" class="btn btn-secondary" id="exportBtn" onclick="exportToExcel()">
+                    <button type="button" class="btn btn-primary" id="pctRequestBtn">
+                        🌐 PCT 납부의뢰
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="exportBtn">
                         📊 엑셀 다운로드
                     </button>
                 </div>
@@ -94,6 +97,8 @@
 
 <script>
 let currentPatents = [];
+let currentPage = 1;
+const itemsPerPage = 5;
 
 // 폼 제출 이벤트
 document.getElementById('searchForm').addEventListener('submit', async function(e) {
@@ -141,51 +146,155 @@ document.getElementById('searchForm').addEventListener('submit', async function(
 // 결과 표시
 function displayResults(data) {
     currentPatents = data.patents || [];
-    
+    currentPage = 1; // 검색 시 첫 페이지로 초기화
     
     document.getElementById('resultCustomerNumber').textContent = data.customerNumber;
     document.getElementById('resultApplicantName').textContent = data.applicantName;
     document.getElementById('resultTotalCount').textContent = data.totalCount;
     
-    const tableBody = document.getElementById('patentTableBody');
-    const emptyState = document.getElementById('emptyState');
     const resultsSection = document.getElementById('resultsSection');
     
-    tableBody.innerHTML = '';
-    
     if (currentPatents.length === 0) {
-        emptyState.style.display = 'block';
+        document.getElementById('emptyState').style.display = 'block';
         document.querySelector('.table-container').style.display = 'none';
     } else {
-        emptyState.style.display = 'none';
+        document.getElementById('emptyState').style.display = 'none';
         document.querySelector('.table-container').style.display = 'block';
-        
-        currentPatents.forEach(patent => {
-            const row = document.createElement('tr');
-            const statusBadge = getStatusBadge(patent.examStatus);
-            const progressBadge = getProgressBadge(patent.registrationStatus);
-            
-            row.innerHTML = `
-                <td>${patent.applicationNumber}</td>
-                <td>${patent.registrationNumber || '-'}</td>
-                <td>${patent.applicantName}</td>
-                <td>${patent.inventorName}</td>
-                <td>${formatDate(patent.applicationDate)}</td>
-                <td>${patent.priorityNumber || '-'}</td>
-                <td>${formatDate(patent.pctDeadline) || '-'}</td>
-                <td style="max-width: 300px; word-break: break-word;">${patent.inventionTitle}</td>
-                <td>${patent.opinionNotice || '-'}</td>
-                <td>${patent.currentStatus || '심사중'}</td>
-                <td>${createFileLink(patent.publicationFullText, patent.publicationDocName, '공개전문')}</td>
-                <td>${createFileLink(patent.announcementFullText, patent.announcementDocName, '공고전문')}</td>
-                <td>${patent.pctApplicationNumber || '-'}</td>
-                <td>${patent.familyPatentNumber || '-'}</td>
-            `;
-            tableBody.appendChild(row);
-        });
+        displayPaginatedResults();
     }
     
     resultsSection.style.display = 'block';
+}
+
+// 페이지네이션된 결과 표시
+function displayPaginatedResults() {
+    const tableBody = document.getElementById('patentTableBody');
+    const totalPages = Math.ceil(currentPatents.length / itemsPerPage);
+    
+    // 테이블 초기화
+    tableBody.innerHTML = '';
+    
+    // 현재 페이지에 해당하는 데이터 계산
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, currentPatents.length);
+    const paginatedPatents = currentPatents.slice(startIndex, endIndex);
+    
+    console.log('📊 페이지네이션 데이터 생성 중...', `${currentPage}/${totalPages} 페이지, ${paginatedPatents.length}건`);
+    
+    paginatedPatents.forEach((patent, index) => {
+        const row = document.createElement('tr');
+        
+        // 안전한 문자열 처리
+        const safeValue = (value) => value && value !== '-' ? value : '-';
+        
+        const applicantName = safeValue(patent.applicantName);
+        const inventionTitle = safeValue(patent.inventionTitle);
+        
+        row.innerHTML = `
+            <td class="patent-number">${safeValue(patent.applicationNumber)}</td>
+            <td class="patent-number">${safeValue(patent.registrationNumber)}</td>
+            <td class="applicant-name-clean applicant-name">${applicantName}</td>
+            <td>${safeValue(patent.inventorName)}</td>
+            <td>${formatDate(patent.applicationDate)}</td>
+            <td>${safeValue(patent.priorityNumber)}</td>
+            <td>${formatDate(patent.pctDeadline) || '-'}</td>
+            <td class="invention-title-natural invention-title">${inventionTitle}</td>
+            <td>${safeValue(patent.opinionNotice)}</td>
+            <td>${safeValue(patent.currentStatus) || '심사중'}</td>
+            <td>${createFileLink(patent.publicationFullText, patent.publicationDocName, '공개전문')}</td>
+            <td>${createFileLink(patent.announcementFullText, patent.announcementDocName, '공고전문')}</td>
+            <td>${safeValue(patent.pctApplicationNumber)}</td>
+            <td>${safeValue(patent.familyPatentNumber)}</td>
+        `;
+        tableBody.appendChild(row);
+    });
+    
+    // 페이지네이션 컨트롤 생성/업데이트
+    createPaginationControls(totalPages);
+    
+    console.log('✅ 페이지네이션 테이블 생성 완료:', `${currentPage}/${totalPages} 페이지, ${paginatedPatents.length}건`);
+}
+
+// 페이지네이션 컨트롤 생성
+function createPaginationControls(totalPages) {
+    let paginationContainer = document.getElementById('paginationContainer');
+    
+    // 페이지네이션 컨테이너가 없으면 생성
+    if (!paginationContainer) {
+        paginationContainer = document.createElement('div');
+        paginationContainer.id = 'paginationContainer';
+        paginationContainer.className = 'pagination-container';
+        
+        // 테이블 컨테이너 다음에 삽입
+        const tableContainer = document.querySelector('.table-container');
+        tableContainer.parentNode.insertBefore(paginationContainer, tableContainer.nextSibling);
+    }
+    
+    // 페이지가 1개 이하면 숨김
+    if (totalPages <= 1) {
+        paginationContainer.style.display = 'none';
+        return;
+    }
+    
+    paginationContainer.style.display = 'flex';
+    
+    let paginationHTML = '<div class="pagination-info">총 ' + currentPatents.length + '건 (페이지 ' + currentPage + '/' + totalPages + ')</div>';
+    paginationHTML += '<div class="pagination-controls">';
+    
+    // 이전 버튼
+    if (currentPage > 1) {
+        paginationHTML += '<button class="pagination-btn" data-page="' + (currentPage - 1) + '">‹ 이전</button>';
+    } else {
+        paginationHTML += '<button class="pagination-btn disabled">‹ 이전</button>';
+    }
+    
+    // 페이지 번호 (최대 5개 표시)
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, startPage + 4);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === currentPage) {
+            paginationHTML += '<button class="pagination-btn active">' + i + '</button>';
+        } else {
+            paginationHTML += '<button class="pagination-btn" data-page="' + i + '">' + i + '</button>';
+        }
+    }
+    
+    // 다음 버튼
+    if (currentPage < totalPages) {
+        paginationHTML += '<button class="pagination-btn" data-page="' + (currentPage + 1) + '">다음 ›</button>';
+    } else {
+        paginationHTML += '<button class="pagination-btn disabled">다음 ›</button>';
+    }
+    
+    paginationHTML += '</div>';
+    paginationContainer.innerHTML = paginationHTML;
+    
+    // 페이지네이션 버튼에 이벤트 리스너 추가
+    const paginationBtns = paginationContainer.querySelectorAll('.pagination-btn[data-page]');
+    paginationBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetPage = parseInt(this.getAttribute('data-page'));
+            if (targetPage && targetPage !== currentPage) {
+                changePage(targetPage);
+            }
+        });
+    });
+}
+
+// 페이지 변경
+function changePage(page) {
+    if (page < 1 || page > Math.ceil(currentPatents.length / itemsPerPage)) return;
+    
+    currentPage = page;
+    displayPaginatedResults();
+    
+    // 테이블 상단으로 스크롤
+    document.querySelector('.table-container').scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+    });
 }
 
 // 심사상태 배지
@@ -245,4 +354,128 @@ function exportToExcel() {
     
     downloadExcel(currentPatents, 'application');
 }
+
+// PCT 납부의뢰 함수
+function requestPCTFiling() {
+    console.log('🌐 PCT 납부의뢰 버튼 클릭');
+    
+    if (currentPatents.length === 0) {
+        showError('PCT 납부의뢰할 특허가 없습니다.');
+        return;
+    }
+    
+    // 고객번호와 첫 번째 출원인 이름 가져오기
+    const customerNumber = document.getElementById('resultCustomerNumber').textContent;
+    const applicantName = document.getElementById('resultApplicantName').textContent;
+    
+    console.log('고객정보:', { customerNumber, applicantName });
+    
+    showPCTRequestModal(customerNumber, applicantName);
+}
+
+// PCT 납부의뢰 모달 표시
+function showPCTRequestModal(customerNumber, applicantName) {
+    // 모달 닫기 함수를 전역으로 등록
+    window.closePCTModal = function() {
+        const modal = document.getElementById('pctModal');
+        if (modal) {
+            modal.remove();
+        }
+    };
+    
+    // PCT 안내문 텍스트
+    const pctGuidanceText = `
+        <h3 style="color: #0F172A; font-size: 1.2rem; font-weight: 600; margin: 0 0 1rem 0;">PCT/해외출원(마감일) 안내</h3>
+        <div style="line-height: 1.6; color: #374151;">
+            <p style="margin: 0 0 0.5rem 0;"><strong>기간:</strong> 국내 출원일 또는 우선일부터 1년 이내</p>
+            <p style="margin: 0 0 0.5rem 0;"><strong>PCT 협약:</strong> 200여개 국가에 대한 출원의 소급 인정 (해외 출원을 위한 한국 출원일로 소급)</p>
+            <p style="margin: 0 0 0.5rem 0;"><strong>제출 요건:</strong> PCT 출원 이후, 국내 출원일부터 30개월 이내에 해외 각국에 번역하여 제출하여야 함</p>
+            <p style="margin: 0 0 0.5rem 0;"><strong>번역문:</strong> 원칙적으로 각국 언어로 번역문을 제출하여야 하며, 각국 대리인을 통하여 제출하여야 하지만, PCT 출원을 통해 우선 2년 6개월 연장하여 해외 출원을 준비할 수 있음</p>
+            <p style="margin: 0 0 0.5rem 0;"><strong>소급 효과:</strong> 미국, 유럽, 중국, 일본 등 주요국 출원일은 한국 출원일로 소급됨</p>
+            <p style="margin: 0 0 1rem 0;"><strong>비용:</strong> 관납료 2,070,000원, 대리인 수수료 700,000원</p>
+        </div>
+    `;
+    
+    // 모달 HTML 생성
+    const modalHTML = `
+        <div id="pctModal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;">
+            <div class="modal-content" style="background: white; border-radius: 8px; padding: 2rem; width: 90%; max-width: 700px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.15);">
+                <div class="modal-header" style="border-bottom: 2px solid #3B82F6; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                    <h2 style="color: #0F172A; font-size: 1.5rem; font-weight: 700; margin: 0; text-align: center;">PCT 출원의뢰</h2>
+                </div>
+                
+                <div class="guidance-text" style="background: #eff6ff; padding: 1.5rem; border-radius: 6px; margin-bottom: 1.5rem; border-left: 4px solid #3B82F6;">
+                    ${pctGuidanceText}
+                </div>
+                
+                <form action="https://api.web3forms.com/submit" method="POST" id="pctRequestForm">
+                    <input type="hidden" name="access_key" value="dd3c9ad5-1802-4bd1-b7e6-397002308afa">
+                    <input type="hidden" name="redirect" value="${window.location.origin}/thanks">
+                    <input type="hidden" name="subject" value="PCT 출원의뢰">
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; color: #374151; font-weight: 500; margin-bottom: 0.5rem;">고객번호</label>
+                        <input type="text" name="customer_number" id="customer_number" value="${customerNumber}" readonly style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px; background: #f9fafb; color: #6b7280;">
+                    </div>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; color: #374151; font-weight: 500; margin-bottom: 0.5rem;">이름 (1번째 목록 출원인)</label>
+                        <input type="text" name="name" id="applicant_name" value="${applicantName}" readonly style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px; background: #f9fafb; color: #6b7280;">
+                    </div>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; color: #374151; font-weight: 500; margin-bottom: 0.5rem;">이메일 <span style="color: #ef4444;">*</span></label>
+                        <input type="email" name="email" id="email" required style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px;" placeholder="example@email.com">
+                    </div>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; color: #374151; font-weight: 500; margin-bottom: 0.5rem;">연락처 <span style="color: #ef4444;">*</span></label>
+                        <input type="tel" name="phone" id="phone" required style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px;" placeholder="010-0000-0000">
+                    </div>
+                    
+                    <textarea name="message" style="display: none;">PCT 출원의뢰 - 고객번호: ${customerNumber}, 고객명: ${applicantName}
+                    
+수신자: ljunhyek@naver.com
+제목: PCT 출원의뢰</textarea>
+                    <input type="hidden" name="to" value="ljunhyek@naver.com">
+                    
+                    <div style="margin-bottom: 1.5rem; border: 1px solid #d1d5db; border-radius: 4px; background: #f9fafb; padding: 1rem; font-size: 0.9rem; color: #6b7280; line-height: 1.5;">
+                        <p style="margin: 0 0 0.5rem 0;"><strong>개인정보 수집 및 이용 동의</strong></p>
+                        <p style="margin: 0 0 0.5rem 0;">수집·이용 목적: PCT 출원 대행 처리</p>
+                        <p style="margin: 0 0 0.5rem 0;">수집 항목: 특허 고객번호, 이름, 연락처, 이메일</p>
+                        <p style="margin: 0 0 0.75rem 0;">보유 및 이용 기간: PCT 출원 대행처리 완료 시</p>
+                        <label style="display: flex; align-items: center; color: #374151; font-size: 0.9rem;">
+                            <input type="checkbox" name="privacy_consent" id="privacy_consent" required style="margin-right: 0.5rem; width: 16px; height: 16px;">
+                            개인정보 수집 및 이용에 동의합니다.
+                        </label>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                        <button type="button" onclick="closePCTModal()" style="padding: 0.75rem 1.5rem; border: 1px solid #d1d5db; background: white; color: #374151; border-radius: 4px; cursor: pointer; font-weight: 500;">취소</button>
+                        <button type="submit" style="padding: 0.75rem 1.5rem; background: #3B82F6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">PCT 출원의뢰</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    console.log('✅ PCT 납부의뢰 모달 생성 완료 - Web3Forms 연동');
+}
+
+// Event listeners setup (avoiding CSP issues with inline onclick)
+document.addEventListener('DOMContentLoaded', function() {
+    // PCT 납부의뢰 버튼
+    const pctRequestBtn = document.getElementById('pctRequestBtn');
+    if (pctRequestBtn) {
+        pctRequestBtn.addEventListener('click', requestPCTFiling);
+    }
+    
+    // Export button
+    const exportBtn = document.getElementById('exportBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportToExcel);
+    }
+});
 </script>
