@@ -2,6 +2,8 @@
 
 한국 특허정보원(KIPRIS) API를 활용한 특허 현황 조회 및 연차료 계산 시스템입니다.
 
+🚀 **Live Demo**: https://new-patent.vercel.app
+
 ## 주요 기능
 
 - 고객번호로 등록특허 검색
