@@ -7,9 +7,17 @@ const axios = require('axios');
 // 등록특허 검색 API
 router.post('/search-registered', async (req, res) => {
     try {
+        console.log('🔍 API 호출 시작:', req.body);
+        console.log('🌍 환경변수 확인:', {
+            hasApiKey: !!process.env.KIPRIS_API_KEY,
+            apiBaseUrl: process.env.KIPRIS_API_BASE_URL,
+            nodeEnv: process.env.NODE_ENV
+        });
+        
         const { customerNumber } = req.body;
         
         if (!customerNumber) {
+            console.log('❌ 고객번호 없음');
             return res.status(400).json({
                 success: false,
                 error: '고객번호를 입력해주세요.'
@@ -18,17 +26,24 @@ router.post('/search-registered', async (req, res) => {
 
         // 고객번호 검증 (12자리 숫자)
         const cleanedNumber = customerNumber.trim();
+        console.log('🔢 정리된 고객번호:', cleanedNumber);
         
         // 12자리 숫자 검증
         if (!/^\d{12}$/.test(cleanedNumber)) {
+            console.log('❌ 고객번호 형식 오류:', cleanedNumber);
             return res.status(400).json({
                 success: false,
                 error: '고객번호는 12자리 숫자여야 합니다.'
             });
         }
         
+        console.log('🚀 특허 서비스 호출 시작');
         // 등록특허 정보 조회
         const result = await patentService.searchRegisteredPatents(cleanedNumber);
+        console.log('✅ 특허 서비스 결과:', { 
+            totalCount: result?.totalCount, 
+            patentsLength: result?.patents?.length 
+        });
         
         res.json({
             success: true,
