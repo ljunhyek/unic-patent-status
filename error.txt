@@ -1,0 +1,8 @@
+
+1. :3001/images/favicon.ico:1   GET http://localhost:3001/images/favicon.ico 404 (Not Found) 에러가 나니 수정
+2. 연차료 납부의뢰 버튼이 눌러지고, 전송이 끝나면 a_thank.ejs가 화면에 표시되도록 해줘
+3. 출원자와 발명의 명칭 데이타가 1~2줄로 표시 되도록 해줘
+4. 1개 화면에 10개씩 표시되고, 데이타가 많으면 페이지네이션 처리를 해줘
+5. 연차료 납부의로 창에서 '안내사항' 이라는 말 삭제,     - 세금 계산서와 영수증 송부(작고 흐린글씨) 다음 줄에 "3. 특허청 특허로에 접속하시거나 특허청으로부터 받으신 지로용지로 직접 납부하실 수 있습니다" 추가
+6. 납부의뢰 버튼 누르면 다음 에러가 나옴 Refused to send form data to 'https://api.web3forms.com/submit' because it violates the following Content Security Policy directive: "form-action 'self'".
+참고로 web3forms의 my Public Access Key is: dd3c9ad5-1802-4bd1-b7e6-397002308afa

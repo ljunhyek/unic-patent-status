@@ -23,4 +23,11 @@ router.get('/application', (req, res) => {
     });
 });
 
+// 감사 페이지 (연차료 납부의뢰 완료 후)
+router.get('/thanks', (req, res) => {
+    res.render('thanks', {
+        title: '신청 완료'
+    });
+});
+
 module.exports = router;

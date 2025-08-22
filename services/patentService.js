@@ -1,6 +1,7 @@
 // services/patentService.js - 특허 서비스 로직
 const axios = require('axios');
 const xml2js = require('xml2js');
+const XLSX = require('xlsx');
 
 class PatentService {
     constructor() {
@@ -504,6 +505,120 @@ class PatentService {
         ].join('\n');
 
         return csvContent;
+    }
+
+    // Excel 생성
+    generateExcel(patents, type) {
+        let headers = [];
+        
+        if (type === 'registered') {
+            headers = [
+                '출원번호', '등록번호', '출원인', '발명자', '출원일', 
+                '등록일', '존속기간 만료일', '발명의명칭', '청구항수',
+                '직전년도 납부연월', '해당 연차료 납부마감일', '해당연차수', '해당연차료',
+                '유효/불납', '차기년도 납부의뢰', '추납기간', '회복기간', '특허평가'
+            ];
+        } else {
+            headers = [
+                '출원번호', '등록번호', '출원인', '발명자', '출원일', 
+                '우선권 출원번호', 'PCT마감일', '발명의 명칭', '의견통지서', '현재상태',
+                '공개전문', '공고전문', 'PCT출원번호', 'Family특허번호'
+            ];
+        }
+
+        const data = patents.map(p => {
+            if (type === 'registered') {
+                return [
+                    p.applicationNumber,
+                    p.registrationNumber,
+                    p.applicantName,
+                    p.inventorName,
+                    p.applicationDate,
+                    p.registrationDate,
+                    p.expirationDate,
+                    p.inventionTitle,
+                    p.claimCount,
+                    '-', // 직전년도 납부연월
+                    '-', // 해당 연차료 납부마감일
+                    '-', // 해당연차수
+                    '-', // 해당연차료
+                    '-', // 유효/불납
+                    '-', // 차기년도 납부의뢰
+                    '-', // 추납기간
+                    '-', // 회복기간
+                    '-'  // 특허평가
+                ];
+            } else {
+                return [
+                    p.applicationNumber,
+                    p.registrationNumber || '-',
+                    p.applicantName,
+                    p.inventorName,
+                    p.applicationDate,
+                    p.priorityNumber || '-',
+                    p.pctDeadline || '-',
+                    p.inventionTitle,
+                    p.opinionNotice || '-',
+                    p.registrationStatus,
+                    p.publicationFullText || '-',
+                    p.announcementFullText || '-',
+                    p.pctApplicationNumber || '-',
+                    p.familyPatentNumber || '-'
+                ];
+            }
+        });
+
+        // 워크시트 생성
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+        
+        // 열 너비 자동 조정
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        const wscols = [];
+        
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            let maxWidth = 10; // 최소 너비
+            
+            // 헤더 길이 확인
+            if (headers[C]) {
+                maxWidth = Math.max(maxWidth, headers[C].length + 2);
+            }
+            
+            // 데이터 길이 확인 (상위 10개 행만 체크)
+            for (let R = 1; R <= Math.min(10, range.e.r); ++R) {
+                const cellAddress = XLSX.utils.encode_cell({r: R, c: C});
+                const cell = ws[cellAddress];
+                if (cell && cell.v) {
+                    const cellLength = String(cell.v).length;
+                    maxWidth = Math.max(maxWidth, cellLength + 2);
+                }
+            }
+            
+            // 최대 너비 제한 (너무 넓어지지 않도록)
+            maxWidth = Math.min(maxWidth, 50);
+            
+            wscols.push({wch: maxWidth});
+        }
+        
+        ws['!cols'] = wscols;
+        
+        // 워크북 생성
+        const wb = XLSX.utils.book_new();
+        const sheetName = type === 'registered' ? '등록특허현황' : '출원특허현황';
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        
+        // Excel 버퍼 생성
+        return XLSX.write(wb, {type: 'buffer', bookType: 'xlsx'});
+    }
+
+    // 출원번호별 특허 상세 정보 조회 (등록특허 페이지용)
+    async getPatentDetailsByApplicationNumber(applicationNumber) {
+        try {
+            // 서지상세정보 조회를 통해 등록번호, 등록일, 존속기간만료일, 청구항수 등을 가져옴
+            return await this.getBibliographyDetailInfo(applicationNumber);
+        } catch (error) {
+            console.error(`출원번호 ${applicationNumber} 상세 정보 조회 오류:`, error.message);
+            throw error;
+        }
     }
 }
 

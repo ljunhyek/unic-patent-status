@@ -97,7 +97,7 @@ async function downloadExcel(patents, type) {
         
         // 서버에서 제공하는 파일명 사용
         const contentDisposition = response.headers.get('content-disposition');
-        let filename = `${type}_patents_${Date.now()}.csv`;
+        let filename = `${type}_patents_${Date.now()}.xlsx`;
         
         if (contentDisposition) {
             const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
