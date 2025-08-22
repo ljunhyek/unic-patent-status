@@ -212,6 +212,56 @@ body {
     color: white;
 }
 
+/* 입력 그룹 및 고객번호 찾기 버튼 */
+.input-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: stretch;
+}
+
+.customer-number-input {
+    flex: 0 0 200px; /* 12자리 + 여유공간으로 고정 너비 */
+    min-width: 200px;
+}
+
+.find-customer-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    background: #6b7280;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.find-customer-btn:hover {
+    background: #4b5563;
+    transform: translateY(-1px);
+}
+
+.find-customer-btn:active {
+    transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+    .input-group {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .customer-number-input {
+        flex: 1;
+        min-width: auto;
+    }
+    
+    .find-customer-btn {
+        width: 100%;
+    }
+}
+
 /* 결과 섹션 */
 .results-section {
     background: var(--bg-white);
