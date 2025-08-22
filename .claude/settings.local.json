@@ -13,7 +13,9 @@
       "Bash(wmic process where:*)",
       "Bash(powershell:*)",
       "Bash(npm start)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npx vercel:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

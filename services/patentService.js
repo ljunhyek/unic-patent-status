@@ -35,13 +35,16 @@ class PatentService {
             const response = await axios.get(url, {
                 params: {
                     word: customerNumber,
-                    ServiceKey: this.apiKey
+                    ServiceKey: this.apiKey,
+                    numOfRows: 100, // 한 번에 최대 100개까지 요청
+                    pageNo: 1
                 },
                 timeout: 10000
             });
 
             console.log('📡 KIPRIS API 응답 상태:', response.status);
             console.log('📊 KIPRIS API 응답 크기:', JSON.stringify(response.data).length, 'bytes');
+            console.log('📄 KIPRIS API 응답 내용:', JSON.stringify(response.data, null, 2));
             
             // 응답 데이터 파싱
             const allPatents = await this.parseResponse(response.data);
@@ -77,7 +80,9 @@ class PatentService {
             const response = await axios.get(url, {
                 params: {
                     word: customerNumber,
-                    ServiceKey: this.apiKey
+                    ServiceKey: this.apiKey,
+                    numOfRows: 100, // 한 번에 최대 100개까지 요청
+                    pageNo: 1
                 },
                 timeout: 10000
             });
