@@ -11,6 +11,11 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Vercel 환경에서 trust proxy 설정
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+}
+
 // 보안 미들웨어
 app.use(helmet({
     contentSecurityPolicy: {

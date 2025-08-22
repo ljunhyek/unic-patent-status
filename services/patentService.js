@@ -30,6 +30,7 @@ class PatentService {
     async searchRegisteredPatents(customerNumber) {
         try {
             const url = `${this.baseUrl}/patUtiModInfoSearchSevice/getWordSearch`;
+            console.log('🌐 KIPRIS API 호출:', { url, customerNumber, hasApiKey: !!this.apiKey });
             
             const response = await axios.get(url, {
                 params: {
@@ -39,8 +40,12 @@ class PatentService {
                 timeout: 10000
             });
 
+            console.log('📡 KIPRIS API 응답 상태:', response.status);
+            console.log('📊 KIPRIS API 응답 크기:', JSON.stringify(response.data).length, 'bytes');
+            
             // 응답 데이터 파싱
             const allPatents = await this.parseResponse(response.data);
+            console.log('📋 파싱된 전체 특허 수:', allPatents.length);
             
             // 등록번호가 실제 값이 있는 특허만 필터링
             const registeredPatents = allPatents.filter(p => 
@@ -48,6 +53,7 @@ class PatentService {
                 p.registrationNumber !== '-' && 
                 p.registrationNumber.trim() !== ''
             );
+            console.log('🔍 등록특허 필터링 결과:', registeredPatents.length);
 
             return {
                 customerNumber,
