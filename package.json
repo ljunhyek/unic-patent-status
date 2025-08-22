@@ -1,6 +1,6 @@
 {
   "name": "unic-patent-status",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "유니크 특허사무소 - 특허 현황 조회 시스템",
   "main": "server.js",
   "scripts": {
