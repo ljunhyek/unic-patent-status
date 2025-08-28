@@ -23,14 +23,14 @@
                             pattern="[0-9]{12}"
                             required
                         >
-                        <button type="button" class="btn btn-secondary find-customer-btn" id="findCustomerBtn">
-                            고객번호 찾기
+                        <button type="submit" class="btn btn-primary" id="searchBtn">
+                            🔍 검색하기
                         </button>
                     </div>
                     <div class="form-hint">12자리 숫자 입력하세요</div>
                 </div>
-                <button type="submit" class="btn btn-primary" id="searchBtn">
-                    🔍 검색하기
+                <button type="button" class="btn btn-secondary find-customer-btn" id="findCustomerBtn">
+                    고객번호 찾기
                 </button>
             </form>
         </section>
@@ -146,15 +146,26 @@ const ANNUITY_POLICY = {
     ]
 };
 
-// KIPO 연차료 테이블 (2024년 기준)
-const KIPO_ANNUITY_FEES = {
-    1: 45000,   2: 45000,   3: 45000,
-    4: 120000,  5: 120000,  6: 120000,
-    7: 360000,  8: 360000,  9: 360000,
-    10: 480000, 11: 480000, 12: 480000,
-    13: 720000, 14: 720000, 15: 720000,
-    16: 960000, 17: 960000, 18: 960000,
-    19: 1200000, 20: 1200000
+// 새로운 연차료 기본료 테이블 (최신 기준)
+const NEW_BASE_FEES = {
+    1: 13000,   2: 13000,   3: 13000,        // 1~3년차: 13,000원
+    4: 36000,   5: 36000,   6: 36000,        // 4~6년차: 36,000원
+    7: 90000,   8: 90000,   9: 90000,        // 7~9년차: 90,000원
+    10: 216000, 11: 216000, 12: 216000,      // 10~12년차: 216,000원
+    13: 324000, 14: 324000, 15: 324000,      // 13~25년차: 324,000원
+    16: 324000, 17: 324000, 18: 324000,
+    19: 324000, 20: 324000, 21: 324000, 22: 324000, 23: 324000, 24: 324000, 25: 324000
+};
+
+// 새로운 청구항 가산료 테이블 (청구범위 1항마다)
+const NEW_CLAIM_FEES = {
+    1: 12000,   2: 12000,   3: 12000,        // 1~3년차: 12,000원
+    4: 20000,   5: 20000,   6: 20000,        // 4~6년차: 20,000원
+    7: 34000,   8: 34000,   9: 34000,        // 7~9년차: 34,000원
+    10: 49000,  11: 49000,  12: 49000,       // 10~12년차: 49,000원
+    13: 49000,  14: 49000,  15: 49000,       // 13~25년차: 49,000원
+    16: 49000,  17: 49000,  18: 49000,
+    19: 49000,  20: 49000,  21: 49000, 22: 49000, 23: 49000, 24: 49000, 25: 49000
 };
 
 // 연차료 계산 헬퍼 함수들
@@ -239,7 +250,188 @@ function calculateDueDate(registrationDate, annualYear) {
     return dueDate;
 }
 
-// 연차료 계산 메인 함수
+// 유틸리티 함수들 (main.js의 함수들을 로컬에서 사용)
+function showError(message) {
+    alert(message); // 간단한 alert로 대체
+}
+
+function hideError() {
+    // 로컬 구현 - 필요시 확장
+}
+
+function formatDate(dateStr) {
+    if (!dateStr || dateStr === '-') return '-';
+    return dateStr;
+}
+
+// 새로운 연차료 계산에 따른 감면 유형 정의
+const NEW_DISCOUNT_TYPES = {
+    'type1': { 
+        name: '개인/중소기업/공공연구기관/전담조직/지방자치단체', 
+        rate: 0.5,  // 50% 감면 (4년차부터 존속기간까지)
+        description: '개인, 중소기업, 공공연구기관, 전담조직, 지방자치단체 등이 해당됩니다.',
+        applicableFromYear: 4
+    },
+    'type1_1': { 
+        name: '중소기업 + 직무발명보상우수기업/지식재산경영인증기업', 
+        rate: 0.7,  // 4~9년차 70% 감면, 10년차부터 50% 감면
+        rate10Plus: 0.5,  // 10년차부터는 50% 감면
+        description: '중소기업이면서 직무발명보상우수기업 또는 지식재산경영인증기업입니다.',
+        applicableFromYear: 4
+    },
+    'type2': { 
+        name: '중견기업', 
+        rate: 0.3,  // 30% 감면 (4~9년차)
+        description: '중견기업입니다.',
+        applicableFromYear: 4,
+        applicableToYear: 9
+    },
+    'type2_1': { 
+        name: '중견기업 + 직무발명보상우수기업/지식재산경영인증기업', 
+        rate: 0.5,  // 50% 감면 (4~9년차)
+        description: '중견기업이면서 직무발명보상우수기업 또는 지식재산경영인증기업입니다.',
+        applicableFromYear: 4,
+        applicableToYear: 9
+    },
+    'none': {
+        name: '해당사항 없음',
+        rate: 0,
+        description: '감면 대상이 아닙니다.',
+        applicableFromYear: 1
+    }
+};
+
+// 감면 선택 모달 표시 함수
+function showDiscountSelectionModal() {
+    // 기존 모달이 있으면 제거
+    const existingModal = document.getElementById('discountModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    const modalHTML = `
+        <div id="discountModal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;">
+            <div class="modal-content" style="background: white; border-radius: 12px; padding: 2rem; width: 90%; max-width: 700px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px rgba(0,0,0,0.15);">
+                <div class="modal-header" style="border-bottom: 2px solid #54B435; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                    <h2 style="color: #0F172A; font-size: 1.5rem; font-weight: 700; margin: 0; text-align: center;">🧮 연차료 계산</h2>
+                    <p style="color: #64748B; font-size: 0.95rem; margin: 0.5rem 0 0 0; text-align: center;">감면유형을 선택해주세요</p>
+                </div>
+                
+                <div class="discount-selection" style="margin-bottom: 2rem;">
+                    <h3 style="color: #374151; font-size: 1.1rem; font-weight: 600; margin: 0 0 1rem 0;">아래 해당할 경우 체크표시하세요</h3>
+                    
+                    <div class="discount-options" style="space-y: 0.75rem;">
+                        <label class="discount-option" style="display: flex; align-items: flex-start; padding: 1rem; border: 2px solid #E5E7EB; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                            <input type="radio" name="discountType" value="type1" style="margin: 0.25rem 1rem 0 0; width: 18px; height: 18px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #374151; margin-bottom: 0.25rem;">개인/중소기업/공공연구기관/전담조직/지방자치단체</div>
+                                <div style="font-size: 0.9rem; color: #6B7280;">4년차부터 존속기간까지 50% 감면</div>
+                            </div>
+                        </label>
+                        
+                        <label class="discount-option" style="display: flex; align-items: flex-start; padding: 1rem; border: 2px solid #E5E7EB; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                            <input type="radio" name="discountType" value="type1_1" style="margin: 0.25rem 1rem 0 0; width: 18px; height: 18px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #374151; margin-bottom: 0.25rem;">중소기업 + 직무발명보상우수기업/지식재산경영인증기업</div>
+                                <div style="font-size: 0.9rem; color: #6B7280;">4~9년차 70% 감면, 10년차부터 존속기간까지 50% 감면</div>
+                            </div>
+                        </label>
+                        
+                        <label class="discount-option" style="display: flex; align-items: flex-start; padding: 1rem; border: 2px solid #E5E7EB; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                            <input type="radio" name="discountType" value="type2" style="margin: 0.25rem 1rem 0 0; width: 18px; height: 18px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #374151; margin-bottom: 0.25rem;">중견기업</div>
+                                <div style="font-size: 0.9rem; color: #6B7280;">4~9년차 30% 감면</div>
+                            </div>
+                        </label>
+                        
+                        <label class="discount-option" style="display: flex; align-items: flex-start; padding: 1rem; border: 2px solid #E5E7EB; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                            <input type="radio" name="discountType" value="type2_1" style="margin: 0.25rem 1rem 0 0; width: 18px; height: 18px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #374151; margin-bottom: 0.25rem;">중견기업 + 직무발명보상우수기업/지식재산경영인증기업</div>
+                                <div style="font-size: 0.9rem; color: #6B7280;">4~9년차 50% 감면</div>
+                            </div>
+                        </label>
+                        
+                        <label class="discount-option" style="display: flex; align-items: flex-start; padding: 1rem; border: 2px solid #E5E7EB; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                            <input type="radio" name="discountType" value="none" style="margin: 0.25rem 1rem 0 0; width: 18px; height: 18px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #374151; margin-bottom: 0.25rem;">해당사항 없음</div>
+                                <div style="font-size: 0.9rem; color: #6B7280;">감면 대상이 아닙니다</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" id="discountCancelBtn" style="padding: 0.75rem 1.5rem; border: 1px solid #D1D5DB; background: white; color: #374151; border-radius: 6px; cursor: pointer; font-weight: 500;">취소</button>
+                    <button type="button" id="discountCalculateBtn" style="padding: 0.75rem 1.5rem; background: #54B435; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">계산하기</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // 라디오 버튼 선택 시 스타일 변경
+    const radioButtons = document.querySelectorAll('input[name="discountType"]');
+    radioButtons.forEach(radio => {
+        radio.addEventListener('change', function() {
+            const options = document.querySelectorAll('.discount-option');
+            options.forEach(option => {
+                option.style.borderColor = '#E5E7EB';
+                option.style.backgroundColor = 'white';
+            });
+            
+            if (this.checked) {
+                const selectedOption = this.closest('.discount-option');
+                selectedOption.style.borderColor = '#54B435';
+                selectedOption.style.backgroundColor = '#F0FDF4';
+            }
+        });
+    });
+
+    // 모달 바깥 클릭 시 닫기
+    document.getElementById('discountModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeDiscountModal();
+        }
+    });
+    
+    // 버튼 이벤트 리스너 추가
+    document.getElementById('discountCancelBtn').addEventListener('click', closeDiscountModal);
+    document.getElementById('discountCalculateBtn').addEventListener('click', calculateWithSelectedDiscount);
+}
+
+// 감면 모달 닫기
+function closeDiscountModal() {
+    const modal = document.getElementById('discountModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// 선택된 감면 유형으로 연차료 계산
+function calculateWithSelectedDiscount() {
+    console.log('🔢 calculateWithSelectedDiscount() 함수 실행');
+    
+    const selectedRadio = document.querySelector('input[name="discountType"]:checked');
+    if (!selectedRadio) {
+        alert('감면 유형을 선택해주세요.');
+        return;
+    }
+
+    const discountType = selectedRadio.value;
+    console.log('📝 선택된 감면 유형:', discountType);
+    
+    closeDiscountModal();
+    
+    // 새로운 계산 방식으로 연차료 계산 실행
+    console.log('⚡ performNewAnnuityCalculation() 호출');
+    performNewAnnuityCalculation(discountType);
+}
+
+// 연차료 계산 메인 함수 (감면 선택 모달 표시)
 function calculateAnnuityFees() {
     // 외부 스크립트의 currentPatents 변수 사용
     if (!window.currentPatents || window.currentPatents.length === 0) {
@@ -247,14 +439,35 @@ function calculateAnnuityFees() {
         return;
     }
     
+    // 감면 유형 선택 모달 표시
+    showDiscountSelectionModal();
+}
+
+// 새로운 연차료 계산 로직
+function performNewAnnuityCalculation(discountType) {
+    console.log('🧮 performNewAnnuityCalculation() 시작, discountType:', discountType);
+    console.log('📊 window.currentPatents:', window.currentPatents);
+    
+    if (!window.currentPatents || window.currentPatents.length === 0) {
+        console.error('❌ 특허 데이터가 없습니다');
+        showError('계산할 특허가 없습니다.');
+        return;
+    }
+    
+    console.log('✅ 특허 데이터 확인됨, 계산 시작');
+    
     const today = new Date();
     const tableBody = document.getElementById('patentTableBody');
     const rows = tableBody.getElementsByTagName('tr');
     
-    window.currentPatents.forEach((patent, index) => {
-        if (index >= rows.length) return;
+    // 현재 페이지에 표시된 특허들만 처리
+    for (let i = 0; i < rows.length; i++) {
+        // currentPage와 itemsPerPage를 고려한 실제 인덱스 계산
+        const actualIndex = ((window.currentPage || 1) - 1) * (window.itemsPerPage || 5) + i;
+        if (actualIndex >= window.currentPatents.length) break;
         
-        const row = rows[index];
+        const patent = window.currentPatents[actualIndex];
+        const row = rows[i];
         const cells = row.getElementsByTagName('td');
         
         // 등록일이 있는 경우에만 계산
@@ -262,8 +475,8 @@ function calculateAnnuityFees() {
             const registrationDate = new Date(patent.registrationDate);
             const annualYear = calculateAnnualYear(patent.registrationDate, today);
             
-            // 연차수가 20년을 초과하면 특허 만료
-            if (annualYear > 20) {
+            // 연차수가 25년을 초과하면 특허 만료
+            if (annualYear > 25) {
                 cells[10].textContent = '-'; // 해당 연차료 납부마감일
                 cells[11].textContent = '만료'; // 해당연차수
                 cells[12].textContent = '-'; // 해당연차료
@@ -275,22 +488,10 @@ function calculateAnnuityFees() {
             }
             
             const dueDate = calculateDueDate(patent.registrationDate, annualYear);
-            const baseFee = KIPO_ANNUITY_FEES[annualYear] || 0;
             const status = computeStatus(dueDate, today, ANNUITY_POLICY);
             
-            let totalFee = baseFee;
-            let lateFee = 0;
-            let recoverySurcharge = 0;
-            
-            // 상태에 따른 추가 비용 계산
-            if (status === "추납기간") {
-                const monthsOverdue = wholeMonthsOverdue(dueDate, today);
-                lateFee = computeLateFee(baseFee, monthsOverdue, ANNUITY_POLICY);
-                totalFee = baseFee + lateFee;
-            } else if (status === "회복기간") {
-                recoverySurcharge = computeRecoverySurcharge(baseFee, ANNUITY_POLICY);
-                totalFee = baseFee + recoverySurcharge;
-            }
+            // 새로운 연차료 계산
+            const calculation = calculateNewAnnuityFee(annualYear, patent.claimCount || 1, discountType, status, dueDate, today);
             
             // 기간 계산
             const graceEnd = endOfMonthSafeAddMonths(dueDate, ANNUITY_POLICY.grace_months);
@@ -299,15 +500,15 @@ function calculateAnnuityFees() {
             // 결과 표시
             cells[10].textContent = formatDate(dueDate.toISOString().split('T')[0]); // 해당 연차료 납부마감일
             cells[11].textContent = annualYear + '년차'; // 해당연차수
-            cells[12].textContent = totalFee.toLocaleString() + '원'; // 해당연차료
+            cells[12].textContent = calculation.totalFee.toLocaleString() + '원'; // 해당연차료
             cells[13].textContent = status; // 유효/불납
             
-            // 차기년도 납부의뢰 (현재 연차가 유효하고 다음 연차가 20년 이내인 경우)
+            // 차기년도 납부의뢰 (현재 연차가 유효하고 다음 연차가 25년 이내인 경우)
             const nextYear = annualYear + 1;
-            if (status === "유효" && nextYear <= 20) {
+            if (status === "유효" && nextYear <= 25) {
                 const nextDueDate = calculateDueDate(patent.registrationDate, nextYear);
-                const nextFee = KIPO_ANNUITY_FEES[nextYear] || 0;
-                cells[14].textContent = nextYear + '년차 ' + nextFee.toLocaleString() + '원 (' + formatDate(nextDueDate.toISOString().split('T')[0]) + ' 마감)';
+                const nextCalculation = calculateNewAnnuityFee(nextYear, patent.claimCount || 1, discountType, "유효", nextDueDate, nextDueDate);
+                cells[14].textContent = nextYear + '년차 ' + nextCalculation.totalFee.toLocaleString() + '원 (' + formatDate(nextDueDate.toISOString().split('T')[0]) + ' 마감)';
             } else {
                 cells[14].textContent = '-';
             }
@@ -339,12 +540,16 @@ function calculateAnnuityFees() {
             cells[15].textContent = '-';
             cells[16].textContent = '-';
         }
-    });
+    }
     
-    // 계산 완료 메시지
+    // 계산 완료 메시지 (감면 유형 포함)
+    const discountInfo = NEW_DISCOUNT_TYPES[discountType];
     const successDiv = document.createElement('div');
     successDiv.className = 'success-message';
-    successDiv.textContent = '연차료 계산이 완료되었습니다.';
+    successDiv.innerHTML = `
+        <div style="font-weight: 600; margin-bottom: 0.5rem;">✅ 연차료 계산이 완료되었습니다.</div>
+        <div style="font-size: 0.9rem; opacity: 0.9;">적용된 감면: ${discountInfo.name}</div>
+    `;
     successDiv.style.cssText = 'background: #d1fae5; color: #065f46; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; text-align: center;';
     
     const resultsSection = document.getElementById('resultsSection');
@@ -354,12 +559,72 @@ function calculateAnnuityFees() {
     }
     resultsSection.insertBefore(successDiv, resultsSection.firstChild);
     
-    // 3초 후 메시지 제거
+    // 5초 후 메시지 제거
     setTimeout(() => {
         if (successDiv.parentNode) {
             successDiv.remove();
         }
-    }, 3000);
+    }, 5000);
+}
+
+// 새로운 연차료 계산 함수
+function calculateNewAnnuityFee(annualYear, claimCount, discountType, status, dueDate, currentDate) {
+    // 1. 기본료 계산
+    const baseFee = NEW_BASE_FEES[annualYear] || NEW_BASE_FEES[25];
+    
+    // 2. 청구항 가산료 계산
+    const claimFeePerItem = NEW_CLAIM_FEES[annualYear] || NEW_CLAIM_FEES[25];
+    const claims = Math.max(1, parseInt(claimCount) || 1);
+    const claimSurchargeFee = claimFeePerItem * claims;
+    
+    // 3. 정상 연차료 = 기본료 + 청구항 가산료
+    const normalFee = baseFee + claimSurchargeFee;
+    
+    // 4. 감면율 적용
+    let discountRate = 0;
+    const discount = NEW_DISCOUNT_TYPES[discountType];
+    
+    if (discount && annualYear >= discount.applicableFromYear) {
+        // 감면 적용 가능한 연차인지 확인
+        const isApplicable = !discount.applicableToYear || annualYear <= discount.applicableToYear;
+        
+        if (isApplicable) {
+            // 유형1-1의 경우 10년차 이후 감면율 변경
+            if (discountType === 'type1_1' && annualYear >= 10) {
+                discountRate = discount.rate10Plus;
+            } else {
+                discountRate = discount.rate;
+            }
+        }
+    }
+    
+    // 5. 감면 연차료 계산
+    const discountedFee = Math.round(normalFee * (1 - discountRate));
+    
+    // 6. 상태에 따른 추가 비용 계산
+    let additionalFee = 0;
+    let finalFee = discountedFee;
+    
+    if (status === "추납기간") {
+        const monthsOverdue = wholeMonthsOverdue(dueDate, currentDate);
+        additionalFee = computeLateFee(discountedFee, monthsOverdue, ANNUITY_POLICY);
+        finalFee = discountedFee + additionalFee;
+    } else if (status === "회복기간") {
+        // 권리회복: 연차등록료 2배 상당액
+        finalFee = discountedFee * 2;
+        additionalFee = discountedFee;
+    }
+    
+    return {
+        baseFee: baseFee,
+        claimSurchargeFee: claimSurchargeFee,
+        normalFee: normalFee,
+        discountRate: discountRate,
+        discountedFee: discountedFee,
+        additionalFee: additionalFee,
+        totalFee: finalFee,
+        status: status
+    };
 }
 
 // 연차료 납부의뢰 관련 함수들은 외부 스크립트 파일 (registered.js)에서 처리됩니다.

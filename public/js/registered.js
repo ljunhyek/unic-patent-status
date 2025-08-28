@@ -7,6 +7,8 @@ const itemsPerPage = 5;
 
 // 전역 변수로 설정하여 다른 스크립트에서 접근 가능하도록 함
 window.currentPatents = currentPatents;
+window.currentPage = currentPage;
+window.itemsPerPage = itemsPerPage;
 
 // DOM 로드 완료 후 실행
 document.addEventListener('DOMContentLoaded', function() {
@@ -94,6 +96,7 @@ function displayResults(data) {
     currentPatents = data.patents || [];
     window.currentPatents = currentPatents;
     currentPage = 1; // 검색 시 첫 페이지로 초기화
+    window.currentPage = currentPage; // 전역변수 동기화
     
     // 현재 날짜 표시
     const currentDate = new Date().toLocaleDateString('ko-KR', {
@@ -240,6 +243,7 @@ function changePage(page) {
     if (page < 1 || page > Math.ceil(currentPatents.length / itemsPerPage)) return;
     
     currentPage = page;
+    window.currentPage = currentPage; // 전역변수 동기화
     displayPaginatedResults();
     
     // 테이블 상단으로 스크롤
@@ -410,11 +414,16 @@ function showRenewalRequestModal(customerNumber, applicantName) {
         '개인정보 수집 및 이용에 동의합니다.</label>' +
         '</div>' +
         '<div style="display: flex; gap: 1rem; justify-content: flex-end;">' +
-        '<button type="button" onclick="closeRenewalModal()" style="padding: 0.75rem 1.5rem; border: 1px solid #d1d5db; background: white; color: #374151; border-radius: 4px; cursor: pointer; font-weight: 500;">취소</button>' +
+        '<button type="button" id="renewalCancelBtn" style="padding: 0.75rem 1.5rem; border: 1px solid #d1d5db; background: white; color: #374151; border-radius: 4px; cursor: pointer; font-weight: 500;">취소</button>' +
         '<button type="submit" style="padding: 0.75rem 1.5rem; background: #54B435; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">납부의뢰</button>' +
         '</div></form></div></div>';
     
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // 취소 버튼 이벤트 리스너 추가
+    document.getElementById('renewalCancelBtn').addEventListener('click', function() {
+        closeRenewalModal();
+    });
     
     console.log('✅ 납부의뢰 모달 생성 완료 - Web3Forms 연동');
 }
