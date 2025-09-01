@@ -39,15 +39,16 @@ module.exports = async (req, res) => {
             title = '페이지를 찾을 수 없습니다';
         }
         
-        // Render EJS template
-        const viewPath = path.join(process.cwd(), 'views', `${viewName}.ejs`);
+        // Render EJS template - use __dirname for more reliable path resolution
+        const viewsDir = path.join(__dirname, '..', 'views');
+        const viewPath = path.join(viewsDir, `${viewName}.ejs`);
         
         if (!fs.existsSync(viewPath)) {
             return res.status(404).send('Template not found');
         }
         
-        const template = fs.readFileSync(viewPath, 'utf8');
-        const html = ejs.render(template, { 
+        // Use renderFile instead of render for proper views path resolution
+        const html = await ejs.renderFile(viewPath, { 
             title: title,
             // Add any other template variables if needed
         });
@@ -63,7 +64,8 @@ module.exports = async (req, res) => {
 
 function handleStaticFile(req, res) {
     const { url } = req;
-    const filePath = path.join(process.cwd(), 'public', url);
+    const publicDir = path.join(__dirname, '..', 'public');
+    const filePath = path.join(publicDir, url);
     
     if (!fs.existsSync(filePath)) {
         return res.status(404).send('File not found');
