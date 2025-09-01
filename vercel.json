@@ -1,29 +1,9 @@
 {
   "version": 2,
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/search-registered",
-      "dest": "/api/search-registered.js"
-    },
-    {
-      "src": "/api/search-application", 
-      "dest": "/api/search-application.js"
-    },
-    {
-      "src": "/api/export-excel",
-      "dest": "/api/export-excel.js"
-    },
-    {
-      "src": "/api/send-renewal-request",
-      "dest": "/api/send-renewal-request.js"
-    },
-    {
-      "src": "/api/get-patent-details",
-      "dest": "/api/get-patent-details.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.js"
+      "source": "/((?!api/.*).*)",
+      "destination": "/api/index"
     }
   ]
 }
