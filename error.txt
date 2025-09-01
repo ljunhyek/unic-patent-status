@@ -1,19 +1,16 @@
-2025-08-22T04:13:52.992Z [info] 🔍 API 호출 시작: { customerNumber: '120190612244' }
-2025-08-22T04:13:52.992Z [info] 🌍 환경변수 확인: {
-  hasApiKey: true,
-  apiBaseUrl: 'http://plus.kipris.or.kr/kipo-api/kipicom',
-  nodeEnv: 'production'
-}
-2025-08-22T04:13:52.992Z [info] 🔢 정리된 고객번호: 120190612244
-2025-08-22T04:13:52.992Z [info] 🚀 특허 서비스 호출 시작
-2025-08-22T04:13:52.992Z [info] 🌐 KIPRIS API 호출: {
-  url: 'http://plus.kipris.or.kr/kipo-api/kipicom/patUtiModInfoSearchSevice/getWordSearch',
-  customerNumber: '120190612244',
-  hasApiKey: true
-}
-2025-08-22T04:13:53.400Z [info] 📡 KIPRIS API 응답 상태: 200
-2025-08-22T04:13:53.400Z [info] 📊 KIPRIS API 응답 크기: 245 bytes
-2025-08-22T04:13:53.400Z [info] 📋 파싱된 전체 특허 수: 0
-2025-08-22T04:13:53.400Z [info] 🔍 등록특허 필터링 결과: 0
-2025-08-22T04:13:53.400Z [info] ✅ 특허 서비스 결과: { totalCount: 0, patentsLength: 0 }
-2025-08-22T04:13:53.402Z [info] 125.128.68.89 - - [22/Aug/2025:04:13:53 +0000] "POST /api/search-registered HTTP/1.1" 200 108 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+Cannot find module './routes/api'
+Require stack:
+- /var/task/api/server.js
+Did you forget to add it to "dependencies" in `package.json`?
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.
+
+Cannot find module './routes/api'
+Require stack:
+- /var/task/api/server.js
+Did you forget to add it to "dependencies" in `package.json`?
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.
+Cannot find module './routes/api'
+Require stack:
+- /var/task/api/server.js
+Did you forget to add it to "dependencies" in `package.json`?
+Node.js process exited with exit status: 1. The logs above can help with debugging the issue.

@@ -47,7 +47,10 @@ module.exports = async (req, res) => {
         }
         
         const template = fs.readFileSync(viewPath, 'utf8');
-        const html = ejs.render(template, { title });
+        const html = ejs.render(template, { 
+            title: title,
+            // Add any other template variables if needed
+        });
         
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.send(html);

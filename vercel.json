@@ -10,11 +10,5 @@
       "source": "/((?!api/.*).*)",
       "destination": "/api/index"
     }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    }
   ]
 }
