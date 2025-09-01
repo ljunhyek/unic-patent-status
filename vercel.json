@@ -1,14 +1,49 @@
 {
   "version": 2,
   "functions": {
-    "api/*.js": {
+    "api/index.js": {
+      "runtime": "nodejs20.x"
+    },
+    "api/search-registered.js": {
+      "runtime": "nodejs20.x"
+    },
+    "api/search-application.js": {
+      "runtime": "nodejs20.x"
+    },
+    "api/export-excel.js": {
+      "runtime": "nodejs20.x"
+    },
+    "api/send-renewal-request.js": {
+      "runtime": "nodejs20.x"
+    },
+    "api/get-patent-details.js": {
       "runtime": "nodejs20.x"
     }
   },
-  "rewrites": [
+  "routes": [
     {
-      "source": "/((?!api/.*).*)",
-      "destination": "/api/index"
+      "src": "/api/search-registered",
+      "dest": "/api/search-registered.js"
+    },
+    {
+      "src": "/api/search-application", 
+      "dest": "/api/search-application.js"
+    },
+    {
+      "src": "/api/export-excel",
+      "dest": "/api/export-excel.js"
+    },
+    {
+      "src": "/api/send-renewal-request",
+      "dest": "/api/send-renewal-request.js"
+    },
+    {
+      "src": "/api/get-patent-details",
+      "dest": "/api/get-patent-details.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.js"
     }
   ]
 }
