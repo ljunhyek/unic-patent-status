@@ -1,25 +1,5 @@
 {
   "version": 2,
-  "functions": {
-    "api/index.js": {
-      "runtime": "nodejs20.x"
-    },
-    "api/search-registered.js": {
-      "runtime": "nodejs20.x"
-    },
-    "api/search-application.js": {
-      "runtime": "nodejs20.x"
-    },
-    "api/export-excel.js": {
-      "runtime": "nodejs20.x"
-    },
-    "api/send-renewal-request.js": {
-      "runtime": "nodejs20.x"
-    },
-    "api/get-patent-details.js": {
-      "runtime": "nodejs20.x"
-    }
-  },
   "routes": [
     {
       "src": "/api/search-registered",
