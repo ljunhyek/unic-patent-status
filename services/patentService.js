@@ -29,8 +29,9 @@ class PatentService {
     // 등록특허 검색
     async searchRegisteredPatents(customerNumber) {
         try {
+            // 1단계: 기본 검색으로 특허 목록 가져오기
             const url = `${this.baseUrl}/patUtiModInfoSearchSevice/getWordSearch`;
-            console.log('🌐 KIPRIS API 호출:', { url, customerNumber, hasApiKey: !!this.apiKey });
+            console.log('🌐 KIPRIS API 1차 호출:', { url, customerNumber, hasApiKey: !!this.apiKey });
             
             const response = await axios.get(url, {
                 params: {
@@ -44,25 +45,89 @@ class PatentService {
 
             console.log('📡 KIPRIS API 응답 상태:', response.status);
             console.log('📊 KIPRIS API 응답 크기:', JSON.stringify(response.data).length, 'bytes');
-            console.log('📄 KIPRIS API 응답 내용:', JSON.stringify(response.data, null, 2));
             
             // 응답 데이터 파싱
             const allPatents = await this.parseResponse(response.data);
             console.log('📋 파싱된 전체 특허 수:', allPatents.length);
             
             // 등록번호가 실제 값이 있는 특허만 필터링
-            const registeredPatents = allPatents.filter(p => 
+            const basicRegisteredPatents = allPatents.filter(p => 
                 p.registrationNumber && 
                 p.registrationNumber !== '-' && 
                 p.registrationNumber.trim() !== ''
             );
-            console.log('🔍 등록특허 필터링 결과:', registeredPatents.length);
+            console.log('🔍 등록특허 필터링 결과:', basicRegisteredPatents.length);
+
+            if (basicRegisteredPatents.length === 0) {
+                return {
+                    customerNumber,
+                    applicantName: '정보 없음',
+                    totalCount: 0,
+                    patents: []
+                };
+            }
+
+            // 2단계: 각 등록특허에 대해 상세정보 조회 (출원번호 기반)
+            const detailedPatents = await Promise.all(
+                basicRegisteredPatents.map(async (basicPatent) => {
+                    try {
+                        // 출원번호가 있는 경우에만 상세 정보 조회
+                        if (basicPatent.applicationNumber && basicPatent.applicationNumber !== '-') {
+                            console.log(`🔍 등록특허 상세 조회: ${basicPatent.applicationNumber}`);
+                            const detailInfo = await this.getBibliographyDetailInfo(basicPatent.applicationNumber);
+                            
+                            if (detailInfo) {
+                                // 기본 정보와 상세 정보 병합
+                                return {
+                                    // 기본 정보
+                                    applicationNumber: basicPatent.applicationNumber,
+                                    registrationNumber: detailInfo.registrationNumber || basicPatent.registrationNumber,
+                                    applicantName: detailInfo.applicantName || basicPatent.applicantName,
+                                    applicationDate: this.formatDate(detailInfo.applicationDate || basicPatent.applicationDate),
+                                    inventionTitle: detailInfo.inventionTitle || basicPatent.inventionTitle,
+                                    
+                                    // 상세 정보에서 가져온 중요 필드들
+                                    inventorName: detailInfo.inventorName || basicPatent.inventorName || '-',
+                                    registrationDate: this.formatDate(detailInfo.registrationDate || basicPatent.registrationDate),
+                                    claimCount: detailInfo.claimCount || basicPatent.claimCount || '-',
+                                    
+                                    // 기타 필드들
+                                    publicationDate: this.formatDate(detailInfo.publicationDate || basicPatent.publicationDate),
+                                    expirationDate: this.formatDate(detailInfo.expirationDate || basicPatent.expirationDate),
+                                    registrationStatus: detailInfo.registrationStatus || basicPatent.registrationStatus || '등록',
+                                    examStatus: detailInfo.examStatus || basicPatent.examStatus,
+                                    ipcCode: detailInfo.ipcCode || basicPatent.ipcCode,
+                                    abstract: detailInfo.abstract || basicPatent.abstract
+                                };
+                            }
+                        }
+                        
+                        // 상세 정보 조회 실패시 기본 정보 반환
+                        return {
+                            ...basicPatent,
+                            inventorName: basicPatent.inventorName || '-',
+                            claimCount: basicPatent.claimCount || '-'
+                        };
+                        
+                    } catch (error) {
+                        console.error(`등록특허 ${basicPatent.applicationNumber} 상세 정보 조회 실패:`, error.message);
+                        // 오류가 있어도 기본 정보는 반환
+                        return {
+                            ...basicPatent,
+                            inventorName: basicPatent.inventorName || '-',
+                            claimCount: basicPatent.claimCount || '-'
+                        };
+                    }
+                })
+            );
+
+            console.log('✅ 등록특허 상세 정보 조회 완료:', detailedPatents.length);
 
             return {
                 customerNumber,
-                applicantName: registeredPatents[0]?.applicantName || '정보 없음',
-                totalCount: registeredPatents.length,
-                patents: registeredPatents
+                applicantName: detailedPatents[0]?.applicantName || '정보 없음',
+                totalCount: detailedPatents.length,
+                patents: detailedPatents
             };
 
         } catch (error) {
@@ -315,12 +380,60 @@ class PatentService {
     formatDate(dateStr) {
         if (!dateStr || dateStr === '-') return '-';
         
+        // YYYY.MM.DD -> YYYY-MM-DD (KIPRIS API 형식)
+        if (dateStr.includes('.')) {
+            return dateStr.replace(/\./g, '-');
+        }
+        
         // YYYYMMDD -> YYYY-MM-DD
         if (dateStr.length === 8) {
             return `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
         }
         
         return dateStr;
+    }
+
+    // 출원번호 포맷팅
+    formatApplicationNumber(applicationNumber) {
+        if (!applicationNumber || applicationNumber === '-') return '-';
+        
+        // 하이픈 제거해서 숫자만 반환 (기존 시스템과 호환성을 위해)
+        return applicationNumber.replace(/-/g, '');
+    }
+
+    // IPC 코드 추출
+    extractIpcCodes(ipcInfoArray) {
+        if (!ipcInfoArray || !ipcInfoArray.ipcInfo) return '-';
+        
+        const ipcInfos = Array.isArray(ipcInfoArray.ipcInfo) 
+            ? ipcInfoArray.ipcInfo 
+            : [ipcInfoArray.ipcInfo];
+        
+        const ipcCodes = ipcInfos.map(info => info.ipcNumber).filter(code => code);
+        return ipcCodes.length > 0 ? ipcCodes.join(', ') : '-';
+    }
+
+    // 권리 존속기간 만료일 계산 (출원일 + 20년)
+    calculateExpirationDate(applicationDate) {
+        if (!applicationDate || applicationDate === '-') return '-';
+        
+        try {
+            // YYYY.MM.DD 형식을 Date 객체로 변환
+            const dateStr = applicationDate.replace(/\./g, '-');
+            const appDate = new Date(dateStr);
+            
+            if (isNaN(appDate.getTime())) return '-';
+            
+            // 20년 추가
+            const expirationDate = new Date(appDate);
+            expirationDate.setFullYear(appDate.getFullYear() + 20);
+            
+            // YYYY-MM-DD 형식으로 반환
+            return expirationDate.toISOString().split('T')[0];
+        } catch (error) {
+            console.error('권리존속기간 계산 오류:', error);
+            return '-';
+        }
     }
 
 
@@ -337,28 +450,93 @@ class PatentService {
                 timeout: 10000
             });
 
-            // 응답 데이터 파싱
-            const result = await this.parseResponse(response.data);
+            console.log(`📋 상세 API 응답 크기 (${applicationNumber}):`, JSON.stringify(response.data).length, 'bytes');
+
+            // XML 응답 처리
+            if (typeof response.data === 'string' && response.data.includes('<?xml')) {
+                return new Promise((resolve, reject) => {
+                    this.parser.parseString(response.data, (err, result) => {
+                        if (err) {
+                            console.error('XML 파싱 오류:', err);
+                            reject(err);
+                            return;
+                        }
+
+                        try {
+                            if (result?.response?.body?.item) {
+                                const item = result.response.body.item;
+                                
+                                // 기본 정보 추출
+                                const biblioInfo = item.biblioSummaryInfoArray?.biblioSummaryInfo || {};
+                                const inventorInfo = item.inventorInfoArray?.inventorInfo || {};
+                                const applicantInfo = item.applicantInfoArray?.applicantInfo || {};
+                                
+                                console.log(`🎯 상세 정보 추출 성공 (${applicationNumber}):`, {
+                                    claimCount: biblioInfo.claimCount,
+                                    inventorName: inventorInfo.name,
+                                    registerNumber: biblioInfo.registerNumber,
+                                    registerDate: biblioInfo.registerDate
+                                });
+
+                                const detailInfo = {
+                                    applicationNumber: this.formatApplicationNumber(biblioInfo.applicationNumber || applicationNumber),
+                                    registrationNumber: this.getValue(biblioInfo.registerNumber),
+                                    applicantName: this.getValue(applicantInfo.name) || this.getValue(biblioInfo.applicantName),
+                                    inventorName: this.getValue(inventorInfo.name),
+                                    applicationDate: this.formatDate(this.getValue(biblioInfo.applicationDate)),
+                                    registrationDate: this.formatDate(this.getValue(biblioInfo.registerDate)),
+                                    inventionTitle: this.getValue(biblioInfo.inventionTitle),
+                                    claimCount: this.getValue(biblioInfo.claimCount),
+                                    
+                                    // 추가 정보
+                                    publicationDate: this.formatDate(this.getValue(biblioInfo.publicationDate)),
+                                    openDate: this.formatDate(this.getValue(biblioInfo.openDate)),
+                                    registrationStatus: this.getValue(biblioInfo.registerStatus) || '등록',
+                                    examinerName: this.getValue(biblioInfo.examinerName),
+                                    finalDisposal: this.getValue(biblioInfo.finalDisposal),
+                                    
+                                    // IPC 코드 추출
+                                    ipcCode: this.extractIpcCodes(item.ipcInfoArray),
+                                    
+                                    // 권리 존속 기간 계산 (등록일 + 20년)
+                                    expirationDate: this.calculateExpirationDate(biblioInfo.applicationDate),
+                                    
+                                    // 법적 상태 정보
+                                    legalStatusInfo: item.legalStatusInfoArray?.legalStatusInfo || []
+                                };
+
+                                resolve(detailInfo);
+                            } else {
+                                console.warn(`상세 정보 없음 (${applicationNumber})`);
+                                resolve(null);
+                            }
+                        } catch (parseError) {
+                            console.error('데이터 추출 오류:', parseError);
+                            reject(parseError);
+                        }
+                    });
+                });
+            }
             
-            if (result && result.length > 0) {
-                const patent = result[0];
-                return {
-                    applicationNumber: patent.applicationNumber,
-                    registrationNumber: patent.registrationNumber,
-                    applicantName: patent.applicantName,
-                    inventorName: patent.inventorName,
-                    applicationDate: patent.applicationDate,
-                    registrationDate: patent.registrationDate,
-                    inventionTitle: patent.inventionTitle,
-                    // 서지상세정보에서 추가로 가져올 필드들
-                    priorityNumber: patent.priorityNumber || patent.priorityApplicationNumber,
-                    pctDeadline: patent.pctDeadline || patent.pctFilingDate,
-                    opinionNotice: patent.opinionNotice,
-                    currentStatus: patent.currentStatus || patent.registrationStatus,
-                    ipcCode: patent.ipcCode,
-                    // 의견통지서 정보 (legalStatusInfo에서 추출)
-                    legalStatusInfo: patent.legalStatusInfo
-                };
+            // JSON 응답 처리 (기존 로직)
+            if (typeof response.data === 'object') {
+                const result = await this.parseResponse(response.data);
+                if (result && result.length > 0) {
+                    const patent = result[0];
+                    return {
+                        applicationNumber: patent.applicationNumber,
+                        registrationNumber: patent.registrationNumber,
+                        applicantName: patent.applicantName,
+                        inventorName: patent.inventorName,
+                        applicationDate: patent.applicationDate,
+                        registrationDate: patent.registrationDate,
+                        inventionTitle: patent.inventionTitle,
+                        claimCount: patent.claimCount,
+                        currentStatus: patent.currentStatus || patent.registrationStatus,
+                        ipcCode: patent.ipcCode,
+                        legalStatusInfo: patent.legalStatusInfo
+                    };
+                }
             }
             
             return null;

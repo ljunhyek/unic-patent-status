@@ -1,34 +1,17 @@
-// server.js - 유니크 특허 현황 조회 시스템
+// API routes only for Vercel serverless functions
 require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
 
 // Vercel 환경에서 trust proxy 설정
 if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
 }
-
-// 보안 미들웨어
-app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
-            imgSrc: ["'self'", "data:", "https:"],
-            formAction: ["'self'", "https://api.web3forms.com"],
-        },
-    },
-}));
 
 // CORS 설정
 const corsOptions = {
@@ -46,33 +29,15 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// 로깅
-if (process.env.NODE_ENV === 'development') {
-    app.use(morgan('dev'));
-} else {
-    app.use(morgan('combined'));
-}
+// Serverless functions don't need logging middleware
 
 // Body Parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// View Engine 설정
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
-
-// Static Files
-app.use(express.static(path.join(__dirname, 'public')));
-
-// 라우트 파일들
-const patentApiRoutes = require('./routes/api');
-const webRoutes = require('./routes/web');
-
-// API 라우트
-app.use('/api', patentApiRoutes);
-
-// 웹 페이지 라우트
-app.use('/', webRoutes);
+// API 라우트 only
+const patentApiRoutes = require('../routes/api');
+app.use('/', patentApiRoutes);
 
 // 404 에러 처리
 app.use((req, res, next) => {

@@ -15,7 +15,10 @@
       "Bash(npm start)",
       "Bash(curl:*)",
       "Bash(npx vercel:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "WebFetch(domain:claude.ai)",
+      "Bash(git rm:*)",
+      "Bash(vercel logs:*)"
     ],
     "deny": [],
     "ask": []
