@@ -160,7 +160,7 @@ function displayPaginatedResults() {
             '<td class="invention-title-natural invention-title">' + inventionTitle + '</td>',
             '<td>' + safeValue(patent.claimCount) + '</td>',
             '<td>-</td>', '<td>-</td>', '<td>-</td>', '<td>-</td>',
-            '<td>-</td>', '<td>-</td>', '<td>-</td>', '<td>-</td>', '<td>-</td>'
+            '<td>-</td>', '<td>-</td>', '<td>-</td>', '<td>-</td>'
         ].join('');
         
         tableBody.appendChild(row);
