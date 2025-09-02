@@ -352,6 +352,21 @@ body {
     border-bottom: none !important;
 }
 
+/* 테이블 컬럼 특정 너비 설정 */
+.patent-table th:nth-child(10),  /* 해당 연차료 납부마감일 */
+.patent-table td:nth-child(10) {
+    min-width: 140px;
+    width: 140px;
+}
+
+.patent-table th:nth-child(15),  /* 추납기간 */
+.patent-table td:nth-child(15),
+.patent-table th:nth-child(16),  /* 회복기간 */
+.patent-table td:nth-child(16) {
+    min-width: 140px;
+    width: 140px;
+}
+
 .patent-table .applicant-name,
 .patent-table .invention-title {
     text-decoration: none !important;
