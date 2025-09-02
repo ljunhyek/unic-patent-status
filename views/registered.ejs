@@ -502,8 +502,17 @@ function performNewAnnuityCalculation(discountType) {
             const graceEnd = endOfMonthSafeAddMonths(nextDueDate, ANNUITY_POLICY.grace_months);
             const recoveryEnd = endOfMonthSafeAddMonths(graceEnd, ANNUITY_POLICY.recovery_months);
             
+            // 해당 연차료 납부마감일: 1년 앞당긴 날짜 (선납 개념)
+            const adjustedDueDate = new Date(nextDueDate);
+            adjustedDueDate.setFullYear(adjustedDueDate.getFullYear() - 1);
+            
+            // 직전년도 납부연월: 해당 연차료 납부마감일보다 1년 앞선 날짜
+            const previousYearDate = new Date(adjustedDueDate);
+            previousYearDate.setFullYear(previousYearDate.getFullYear() - 1);
+            
             // 결과 표시 (다음 연차 정보를 현재 컬럼에 표시)
-            cells[10].textContent = formatDate(nextDueDate.toISOString().split('T')[0]); // 해당 연차료 납부마감일 (다음 연차)
+            cells[9].textContent = formatDate(previousYearDate.toISOString().split('T')[0].substring(0, 7)); // 직전년도 납부연월 (YYYY-MM)
+            cells[10].textContent = formatDate(adjustedDueDate.toISOString().split('T')[0]); // 해당 연차료 납부마감일 (1년 앞당김)
             cells[11].textContent = nextYear + '년차'; // 해당연차수 (다음 연차)
             cells[12].textContent = nextCalculation.totalFee.toLocaleString() + '원'; // 해당연차료 (다음 연차)
             cells[13].textContent = currentStatus; // 유효/불납 (현재 상태 유지)
@@ -517,33 +526,38 @@ function performNewAnnuityCalculation(discountType) {
                 cells[14].textContent = currentStatus; // 추납기간, 회복기간 등
             }
             
-            // 추납기간 (다음 연차 기준)
-            const nextStatus = computeStatus(nextDueDate, today, ANNUITY_POLICY);
-            if (nextStatus === "유효") {
-                cells[15].textContent = formatDate(nextDueDate.toISOString().split('T')[0]) + ' ~ ' + formatDate(graceEnd.toISOString().split('T')[0]);
-            } else if (nextStatus === "추납기간") {
-                cells[15].textContent = '진행중 (' + formatDate(graceEnd.toISOString().split('T')[0]) + ' 마감)';
+            // 추납기간과 회복기간은 조정된 마감일 기준으로 계산
+            const adjustedGraceEnd = endOfMonthSafeAddMonths(adjustedDueDate, ANNUITY_POLICY.grace_months);
+            const adjustedRecoveryEnd = endOfMonthSafeAddMonths(adjustedGraceEnd, ANNUITY_POLICY.recovery_months);
+            const adjustedStatus = computeStatus(adjustedDueDate, today, ANNUITY_POLICY);
+            
+            // 추납기간 (조정된 마감일 기준)
+            if (adjustedStatus === "유효") {
+                cells[15].textContent = formatDate(adjustedDueDate.toISOString().split('T')[0]) + ' ~ ' + formatDate(adjustedGraceEnd.toISOString().split('T')[0]);
+            } else if (adjustedStatus === "추납기간") {
+                cells[15].textContent = '진행중 (' + formatDate(adjustedGraceEnd.toISOString().split('T')[0]) + ' 마감)';
             } else {
                 cells[15].textContent = '-';
             }
             
-            // 회복기간 (다음 연차 기준)
-            if (nextStatus === "유효" || nextStatus === "추납기간") {
-                cells[16].textContent = formatDate(graceEnd.toISOString().split('T')[0]) + ' ~ ' + formatDate(recoveryEnd.toISOString().split('T')[0]);
-            } else if (nextStatus === "회복기간") {
-                cells[16].textContent = '진행중 (' + formatDate(recoveryEnd.toISOString().split('T')[0]) + ' 마감)';
+            // 회복기간 (조정된 마감일 기준)
+            if (adjustedStatus === "유효" || adjustedStatus === "추납기간") {
+                cells[16].textContent = formatDate(adjustedGraceEnd.toISOString().split('T')[0]) + ' ~ ' + formatDate(adjustedRecoveryEnd.toISOString().split('T')[0]);
+            } else if (adjustedStatus === "회복기간") {
+                cells[16].textContent = '진행중 (' + formatDate(adjustedRecoveryEnd.toISOString().split('T')[0]) + ' 마감)';
             } else {
                 cells[16].textContent = '-';
             }
         } else {
             // 등록일이 없는 경우
-            cells[10].textContent = '-';
-            cells[11].textContent = '-';
-            cells[12].textContent = '-';
-            cells[13].textContent = '-';
-            cells[14].textContent = '-';
-            cells[15].textContent = '-';
-            cells[16].textContent = '-';
+            cells[9].textContent = '-';  // 직전년도 납부연월
+            cells[10].textContent = '-'; // 해당 연차료 납부마감일
+            cells[11].textContent = '-'; // 해당연차수
+            cells[12].textContent = '-'; // 해당연차료
+            cells[13].textContent = '-'; // 유효/불납
+            cells[14].textContent = '-'; // 정상납부/미납
+            cells[15].textContent = '-'; // 추납기간
+            cells[16].textContent = '-'; // 회복기간
         }
     }
     
