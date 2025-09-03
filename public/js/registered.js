@@ -127,8 +127,27 @@ function displayResults(data) {
 }
 
 function displayPaginatedResults() {
-    // 전역변수와 로컬변수 동기화
-    currentPatents = window.currentPatents || currentPatents;
+    console.log('📋 displayPaginatedResults() 호출됨');
+    console.log('   동기화 전 - currentPatents.length:', currentPatents.length);
+    console.log('   동기화 전 - window.currentPatents.length:', window.currentPatents ? window.currentPatents.length : 'undefined');
+    console.log('   동기화 전 - currentPatents === window.currentPatents:', currentPatents === window.currentPatents);
+    
+    // 강화된 전역변수와 로컬변수 동기화
+    if (window.currentPatents && window.currentPatents.length > 0) {
+        currentPatents = window.currentPatents;
+        console.log('   ✅ currentPatents를 window.currentPatents로 동기화');
+    } else if (currentPatents.length > 0) {
+        window.currentPatents = currentPatents;
+        console.log('   ⚠️ window.currentPatents를 currentPatents로 동기화');
+    } else {
+        console.error('   ❌ 두 변수 모두 비어있음');
+        return;
+    }
+    
+    console.log('   동기화 후 - currentPatents.length:', currentPatents.length);
+    console.log('   동기화 후 - window.currentPatents.length:', window.currentPatents.length);
+    console.log('   동기화 후 - currentPatents === window.currentPatents:', currentPatents === window.currentPatents);
+    
     const tableBody = document.getElementById('patentTableBody');
     const totalPages = Math.ceil(currentPatents.length / itemsPerPage);
     
@@ -268,12 +287,36 @@ function createPaginationControls(totalPages) {
 }
 
 function changePage(page) {
-    // 전역변수와 로컬변수 동기화
-    currentPatents = window.currentPatents || currentPatents;
-    if (page < 1 || page > Math.ceil(currentPatents.length / itemsPerPage)) return;
+    console.log('🔄 changePage() 호출됨, 페이지:', page);
+    console.log('   변경 전 - currentPatents.length:', currentPatents.length);
+    console.log('   변경 전 - window.currentPatents.length:', window.currentPatents ? window.currentPatents.length : 'undefined');
+    console.log('   변경 전 - currentPatents === window.currentPatents:', currentPatents === window.currentPatents);
+    
+    // 강화된 전역변수와 로컬변수 동기화
+    if (window.currentPatents && window.currentPatents.length > 0) {
+        currentPatents = window.currentPatents;
+        console.log('   ✅ currentPatents를 window.currentPatents로 동기화');
+    } else if (currentPatents.length > 0) {
+        window.currentPatents = currentPatents;
+        console.log('   ⚠️ window.currentPatents를 currentPatents로 동기화');
+    } else {
+        console.error('   ❌ 두 변수 모두 비어있음');
+        return;
+    }
+    
+    console.log('   변경 후 - currentPatents.length:', currentPatents.length);
+    console.log('   변경 후 - window.currentPatents.length:', window.currentPatents.length);
+    console.log('   변경 후 - currentPatents === window.currentPatents:', currentPatents === window.currentPatents);
+    
+    if (page < 1 || page > Math.ceil(currentPatents.length / itemsPerPage)) {
+        console.error('   ❌ 잘못된 페이지 번호:', page);
+        return;
+    }
     
     currentPage = page;
     window.currentPage = currentPage; // 전역변수 동기화
+    console.log('   📄 페이지 변경 완료:', currentPage);
+    
     displayPaginatedResults();
     
     // 테이블 상단으로 스크롤
