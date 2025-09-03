@@ -127,6 +127,8 @@ function displayResults(data) {
 }
 
 function displayPaginatedResults() {
+    // 전역변수와 로컬변수 동기화
+    currentPatents = window.currentPatents || currentPatents;
     const tableBody = document.getElementById('patentTableBody');
     const totalPages = Math.ceil(currentPatents.length / itemsPerPage);
     
@@ -149,6 +151,34 @@ function displayPaginatedResults() {
         const applicantName = safeValue(patent.applicantName);
         const inventionTitle = safeValue(patent.inventionTitle);
         
+        // 연차료 계산 데이터가 있는 경우 표시
+        const calculatedData = patent.calculatedData;
+        let annualFeeColumns;
+        
+        if (calculatedData) {
+            annualFeeColumns = [
+                '<td>' + (calculatedData.previousPaymentMonth || '') + '</td>',
+                '<td>' + (calculatedData.dueDate || '-') + '</td>',
+                '<td>' + (calculatedData.annualYear || '-') + '</td>',
+                '<td>' + (calculatedData.annualFee || '-') + '</td>',
+                '<td>' + (calculatedData.validityStatus || '-') + '</td>',
+                '<td>' + (calculatedData.paymentStatus || '-') + '</td>',
+                '<td>' + (calculatedData.latePaymentPeriod || '-') + '</td>',
+                '<td>' + (calculatedData.recoveryPeriod || '-') + '</td>'
+            ];
+            console.log('🔄 페이지네이션 - 계산된 데이터 표시 (페이지 ' + currentPage + '):', patent.applicationNumber, {
+                annualYear: calculatedData.annualYear,
+                annualFee: calculatedData.annualFee,
+                validityStatus: calculatedData.validityStatus
+            });
+        } else {
+            annualFeeColumns = [
+                '<td>-</td>', '<td>-</td>', '<td>-</td>', '<td>-</td>',
+                '<td>-</td>', '<td>-</td>', '<td>-</td>', '<td>-</td>'
+            ];
+            console.log('⚠️ 페이지네이션 - 계산된 데이터 없음 (페이지 ' + currentPage + '):', patent.applicationNumber);
+        }
+        
         row.innerHTML = [
             '<td class="patent-number">' + safeValue(patent.applicationNumber) + '</td>',
             '<td class="patent-number">' + safeValue(patent.registrationNumber) + '</td>',
@@ -158,10 +188,8 @@ function displayPaginatedResults() {
             '<td>' + formatDate(patent.registrationDate) + '</td>',
             '<td>' + formatDate(patent.expirationDate) + '</td>',
             '<td class="invention-title-natural invention-title">' + inventionTitle + '</td>',
-            '<td>' + safeValue(patent.claimCount) + '</td>',
-            '<td>-</td>', '<td>-</td>', '<td>-</td>', '<td>-</td>',
-            '<td>-</td>', '<td>-</td>', '<td>-</td>', '<td>-</td>'
-        ].join('');
+            '<td>' + safeValue(patent.claimCount) + '</td>'
+        ].concat(annualFeeColumns).join('');
         
         tableBody.appendChild(row);
     });
@@ -240,6 +268,8 @@ function createPaginationControls(totalPages) {
 }
 
 function changePage(page) {
+    // 전역변수와 로컬변수 동기화
+    currentPatents = window.currentPatents || currentPatents;
     if (page < 1 || page > Math.ceil(currentPatents.length / itemsPerPage)) return;
     
     currentPage = page;
