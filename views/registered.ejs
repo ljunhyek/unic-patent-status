@@ -485,29 +485,56 @@ function performNewAnnuityCalculation(discountType) {
             threeYearsAfterRegistration.setFullYear(threeYearsAfterRegistration.getFullYear() + 3);
             
             // 현재 날짜가 등록일 + 3년이 아직 안 된 경우 처리
-            if (today < threeYearsAfterRegistration) {
+            let isBeforeFirstPaymentDue = today < threeYearsAfterRegistration;
+            
+            if (isBeforeFirstPaymentDue) {
+                // 현재 날짜 < 등록일 + 3년인 경우:
+                // - 해당 연차료 납부마감일: 등록일 + 3년
+                // - 해당연차수: 4년차
+                // - 직전년도 납부연월: 빈칸
+                // - 추납기간, 회복기간: 해당 연차료 납부마감일 기준 계산
+                
+                const fourthYearDueDate = new Date(threeYearsAfterRegistration); // 등록일 + 3년 = 4년차 납부마감일
+                const fourthYearCalculation = calculateNewAnnuityFee(4, patent.claimCount || 1, discountType, "유효", fourthYearDueDate, today);
+                
+                // 추납기간과 회복기간 계산 (4년차 납부마감일 기준)
+                const graceEnd = endOfMonthSafeAddMonths(fourthYearDueDate, ANNUITY_POLICY.grace_months);
+                const recoveryEnd = endOfMonthSafeAddMonths(graceEnd, ANNUITY_POLICY.recovery_months);
+                
+                const latePaymentPeriod = formatDate(fourthYearDueDate.toISOString().split('T')[0]) + ' ~ ' + formatDate(graceEnd.toISOString().split('T')[0]);
+                const recoveryPeriod = formatDate(graceEnd.toISOString().split('T')[0]) + ' ~ ' + formatDate(recoveryEnd.toISOString().split('T')[0]);
+                
                 // 계산된 데이터를 특허 객체에 저장
                 patent.calculatedData = {
-                    previousPaymentMonth: '', // 빈칸
-                    dueDate: '-',
-                    annualYear: '-',
-                    annualFee: '-',
+                    previousPaymentMonth: '', // 빈칸 (현재 날짜 < 등록일 + 3년)
+                    dueDate: formatDate(fourthYearDueDate.toISOString().split('T')[0]), // 등록일 + 3년
+                    annualYear: '4년차',
+                    annualFee: fourthYearCalculation.totalFee.toLocaleString() + '원',
                     validityStatus: '유효',
                     paymentStatus: '정상납부',
-                    latePaymentPeriod: '-',
-                    recoveryPeriod: '-'
+                    latePaymentPeriod: latePaymentPeriod,
+                    recoveryPeriod: recoveryPeriod
                 };
+                
+                console.log('💾 특허 ' + actualIndex + ' 계산 데이터 저장 완료 (등록일+3년 이전):', {
+                    applicationNumber: patent.applicationNumber,
+                    registrationDate: patent.registrationDate,
+                    fourthYearDueDate: formatDate(fourthYearDueDate.toISOString().split('T')[0]),
+                    annualYear: '4년차',
+                    annualFee: fourthYearCalculation.totalFee.toLocaleString() + '원',
+                    isInCurrentPage: isInCurrentPage
+                });
                 
                 // 현재 페이지에 표시되는 경우 UI 업데이트
                 if (cells) {
                     cells[9].textContent = ''; // 직전년도 납부연월 - 빈칸
-                    cells[10].textContent = '-'; // 해당 연차료 납부마감일
-                    cells[11].textContent = '-'; // 해당연차수
-                    cells[12].textContent = '-'; // 해당연차료
-                    cells[13].textContent = '유효'; // 유효/불납
-                    cells[14].textContent = '정상납부'; // 정상납부/미납
-                    cells[15].textContent = '-'; // 추납기간
-                    cells[16].textContent = '-'; // 회복기간
+                    cells[10].textContent = patent.calculatedData.dueDate; // 해당 연차료 납부마감일
+                    cells[11].textContent = patent.calculatedData.annualYear; // 해당연차수
+                    cells[12].textContent = patent.calculatedData.annualFee; // 해당연차료
+                    cells[13].textContent = patent.calculatedData.validityStatus; // 유효/불납
+                    cells[14].textContent = patent.calculatedData.paymentStatus; // 정상납부/미납
+                    cells[15].textContent = patent.calculatedData.latePaymentPeriod; // 추납기간
+                    cells[16].textContent = patent.calculatedData.recoveryPeriod; // 회복기간
                 }
                 continue;
             }

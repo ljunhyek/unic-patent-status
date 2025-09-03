@@ -18,7 +18,8 @@
       "Bash(node:*)",
       "WebFetch(domain:claude.ai)",
       "Bash(git rm:*)",
-      "Bash(vercel logs:*)"
+      "Bash(vercel logs:*)",
+      "WebFetch(domain:localhost)"
     ],
     "deny": [],
     "ask": []
