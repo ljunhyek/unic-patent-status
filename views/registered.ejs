@@ -4,13 +4,29 @@
     <div class="container">
         <div class="page-title">
             <h1>등록특허 현황</h1>
-            <p>고객번호로 등록된 특허 목록을 조회합니다</p>
+            <p>고객번호 또는 특허권자명으로 등록된 특허 목록을 조회합니다</p>
         </div>
 
         <!-- 검색 섹션 -->
         <section class="search-section">
             <form class="search-form" id="searchForm">
+                <!-- 검색 유형 선택 -->
                 <div class="form-group">
+                    <label class="form-label">검색 유형</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="searchType" value="customerNumber" checked>
+                            <span class="radio-label">고객번호</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="searchType" value="rightHolderName">
+                            <span class="radio-label">특허권자명</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 고객번호 입력 필드 -->
+                <div class="form-group" id="customerNumberGroup">
                     <label for="customerNumber" class="form-label">고객번호</label>
                     <div class="input-group">
                         <input 
@@ -21,14 +37,33 @@
                             placeholder="예: 120190612244"
                             maxlength="12"
                             pattern="[0-9]{12}"
-                            required
                         >
                         <button type="submit" class="btn btn-primary" id="searchBtn">
                             🔍 검색하기
                         </button>
                     </div>
-                    <div class="form-hint">12자리 숫자 입력하세요</div>
+                    <div class="form-hint">12자리 숫자를 입력하세요</div>
                 </div>
+
+                <!-- 특허권자명 입력 필드 -->
+                <div class="form-group" id="rightHolderNameGroup" style="display: none;">
+                    <label for="rightHolderName" class="form-label">특허권자명</label>
+                    <div class="input-group">
+                        <input 
+                            type="text" 
+                            id="rightHolderName" 
+                            name="rightHolderName" 
+                            class="form-input"
+                            placeholder="예: 세기에프에스디(주)"
+                            maxlength="100"
+                        >
+                        <button type="submit" class="btn btn-primary" id="searchBtn2">
+                            🔍 검색하기
+                        </button>
+                    </div>
+                    <div class="form-hint">특허권자 또는 회사명을 입력하세요</div>
+                </div>
+
                 <button type="button" class="btn btn-secondary find-customer-btn" id="findCustomerBtn">
                     고객번호 찾기
                 </button>

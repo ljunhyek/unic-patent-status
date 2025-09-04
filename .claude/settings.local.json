@@ -19,7 +19,9 @@
       "WebFetch(domain:claude.ai)",
       "Bash(git rm:*)",
       "Bash(vercel logs:*)",
-      "WebFetch(domain:localhost)"
+      "WebFetch(domain:localhost)",
+      "WebSearch",
+      "WebFetch(domain:plus.kipris.or.kr)"
     ],
     "deny": [],
     "ask": []

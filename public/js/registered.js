@@ -21,38 +21,103 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('✅ 검색 폼 이벤트 리스너 등록 완료');
     }
     
+    // 라디오 버튼 이벤트 리스너
+    setupSearchTypeListeners();
+    
     // 버튼 이벤트 리스너들
     setupButtonListeners();
 });
+
+// 검색 유형 라디오 버튼 이벤트 설정
+function setupSearchTypeListeners() {
+    const searchTypeRadios = document.querySelectorAll('input[name="searchType"]');
+    searchTypeRadios.forEach(radio => {
+        radio.addEventListener('change', toggleSearchFields);
+    });
+    console.log('✅ 검색 유형 라디오 버튼 이벤트 리스너 등록 완료');
+}
+
+// 검색 필드 토글 함수
+function toggleSearchFields() {
+    const selectedType = document.querySelector('input[name="searchType"]:checked')?.value;
+    const customerNumberGroup = document.getElementById('customerNumberGroup');
+    const rightHolderNameGroup = document.getElementById('rightHolderNameGroup');
+    
+    if (selectedType === 'customerNumber') {
+        customerNumberGroup.style.display = 'block';
+        rightHolderNameGroup.style.display = 'none';
+        // 특허권자명 필드 초기화
+        document.getElementById('rightHolderName').value = '';
+    } else if (selectedType === 'rightHolderName') {
+        customerNumberGroup.style.display = 'none';
+        rightHolderNameGroup.style.display = 'block';
+        // 고객번호 필드 초기화
+        document.getElementById('customerNumber').value = '';
+    }
+    
+    console.log('🔄 검색 유형 변경:', selectedType);
+}
 
 // 검색 처리 함수
 async function handleSearch(e) {
     e.preventDefault();
     console.log('🔍 검색 시작');
     
-    const customerNumber = document.getElementById('customerNumber').value.trim();
-    const searchBtn = document.getElementById('searchBtn');
-    const originalText = searchBtn.innerHTML;
+    // 선택된 검색 유형 확인
+    const selectedType = document.querySelector('input[name="searchType"]:checked')?.value;
+    let searchValue = '';
+    let searchBtn = null;
     
-    // 입력 검증
-    if (!/^\d{12}$/.test(customerNumber)) {
-        showError('고객번호는 12자리 숫자여야 합니다.');
+    if (selectedType === 'customerNumber') {
+        searchValue = document.getElementById('customerNumber').value.trim();
+        searchBtn = document.getElementById('searchBtn');
+        
+        // 고객번호 검증
+        if (!/^\d{12}$/.test(searchValue)) {
+            showError('고객번호는 12자리 숫자여야 합니다.');
+            return;
+        }
+        console.log('📝 고객번호:', searchValue);
+    } else if (selectedType === 'rightHolderName') {
+        searchValue = document.getElementById('rightHolderName').value.trim();
+        searchBtn = document.getElementById('searchBtn2');
+        
+        // 특허권자명 검증
+        if (!searchValue || searchValue.length < 2) {
+            showError('특허권자명을 2글자 이상 입력해주세요.');
+            return;
+        }
+        console.log('📝 특허권자명:', searchValue);
+    } else {
+        showError('검색 유형을 선택해주세요.');
         return;
     }
     
-    console.log('📝 고객번호:', customerNumber);
+    const originalText = searchBtn.innerHTML;
     hideError();
     showLoading(searchBtn);
     
     try {
         // API 호출
         console.log('🌐 API 호출 시작');
+        const requestBody = {
+            searchType: selectedType,
+            searchValue: searchValue
+        };
+        
+        // 기존 호환성을 위해 고객번호인 경우 customerNumber도 포함
+        if (selectedType === 'customerNumber') {
+            requestBody.customerNumber = searchValue;
+        }
+        
+        console.log('📤 API 요청 데이터:', requestBody);
+        
         const response = await fetch('/api/search-registered', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ customerNumber })
+            body: JSON.stringify(requestBody)
         });
         
         const data = await response.json();

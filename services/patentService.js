@@ -27,20 +27,42 @@ class PatentService {
     }
 
     // 등록특허 검색
-    async searchRegisteredPatents(customerNumber) {
+    async searchRegisteredPatents(searchValue, searchType = 'customerNumber') {
         try {
-            // 1단계: 기본 검색으로 특허 목록 가져오기
-            const url = `${this.baseUrl}/patUtiModInfoSearchSevice/getWordSearch`;
-            console.log('🌐 KIPRIS API 1차 호출:', { url, customerNumber, hasApiKey: !!this.apiKey });
+            // 1단계: 고급 검색으로 특허 목록 가져오기 (현재 특허권자 기준)
+            const url = `${this.baseUrl}/patUtiModInfoSearchSevice/getAdvancedSearch`;
+            console.log('🌐 KIPRIS API 1차 호출 (고급검색):', { 
+                url, 
+                searchValue, 
+                searchType, 
+                hasApiKey: !!this.apiKey 
+            });
+            
+            // 검색 파라미터 구성
+            const params = {
+                ServiceKey: this.apiKey,
+                patent: true,             // 특허 포함
+                utility: false,           // 실용신안 제외 (등록특허만)
+                numOfRows: 100,           // 한 번에 최대 100개까지 요청
+                pageNo: 1
+            };
+            
+            // 검색 유형에 따른 API 필드 분기 처리
+            if (searchType === 'customerNumber' && /^\d{12}$/.test(searchValue)) {
+                // 12자리 고객번호: applicant 필드 사용 (출원인명/특허고객번호)
+                params.applicant = searchValue;
+                console.log('🔢 고객번호 검색 - applicant 필드 사용:', searchValue);
+            } else {
+                // 특허권자명: rightHoler 필드 사용 (등록권자/현재 특허권자)
+                params.rightHoler = searchValue;
+                console.log('🏢 특허권자명 검색 - rightHoler 필드 사용:', searchValue);
+            }
+            
+            console.log('📤 KIPRIS API 요청 파라미터:', params);
             
             const response = await axios.get(url, {
-                params: {
-                    word: customerNumber,
-                    ServiceKey: this.apiKey,
-                    numOfRows: 100, // 한 번에 최대 100개까지 요청
-                    pageNo: 1
-                },
-                timeout: 10000
+                params: params,
+                timeout: 15000  // getAdvancedSearch는 더 오래 걸릴 수 있음
             });
 
             console.log('📡 KIPRIS API 응답 상태:', response.status);
@@ -60,7 +82,7 @@ class PatentService {
 
             if (basicRegisteredPatents.length === 0) {
                 return {
-                    customerNumber,
+                    customerNumber: searchValue,  // 검색값을 customerNumber로 반환 (호환성)
                     applicantName: '정보 없음',
                     totalCount: 0,
                     patents: []
@@ -124,7 +146,7 @@ class PatentService {
             console.log('✅ 등록특허 상세 정보 조회 완료:', detailedPatents.length);
 
             return {
-                customerNumber,
+                customerNumber: searchValue,  // 검색값을 customerNumber로 반환 (호환성)
                 applicantName: detailedPatents[0]?.applicantName || '정보 없음',
                 totalCount: detailedPatents.length,
                 patents: detailedPatents
