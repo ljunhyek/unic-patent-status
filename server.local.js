@@ -98,7 +98,7 @@ if (process.env.NODE_ENV !== 'production') {
         ╔════════════════════════════════════════╗
         ║   유니크 특허 현황 조회 시스템          ║
         ╠════════════════════════════════════════╣
-        ║   환경: ${process.env.NODE_ENV.padEnd(27)}  ║
+        ║   환경: ${(process.env.NODE_ENV || 'development').padEnd(27)}  ║
         ║   서버: http://localhost:${PORT}          ║
         ║   시간: ${new Date().toLocaleString('ko-KR').padEnd(27)}  ║
         ╚════════════════════════════════════════╝

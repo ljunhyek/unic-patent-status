@@ -16,10 +16,24 @@ router.get('/registered', (req, res) => {
     });
 });
 
+// 등록특허 조회 (크롤링 기반)
+router.get('/patent-search', (req, res) => {
+    res.render('patent-search', {
+        title: '등록특허 조회'
+    });
+});
+
 // 출원특허 현황
 router.get('/application', (req, res) => {
     res.render('application', {
         title: '출원특허 현황'
+    });
+});
+
+// 연차료 조회
+router.get('/fee-search', (req, res) => {
+    res.render('fee-search', {
+        title: '연차료 조회'
     });
 });
 

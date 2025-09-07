@@ -1,0 +1,75 @@
+<ul class="regist-list">
+		
+							<li>
+		
+								<em class="tit">출원연월일</em>
+	
+								<span>2016년 04월 07일</span>
+	
+							</li>
+	
+							<li>
+		
+								<em class="tit">출원번호</em>
+	
+								<span>10-2016-0042595</span>
+	
+							</li>
+	
+							<li>
+		
+								<em class="tit">공고연월일</em>
+	
+								<span>2016년 12월 07일</span>
+	
+							</li>
+	
+							<li>
+		
+								<em class="tit">공고번호</em>
+	
+								<span></span>
+	
+							</li>
+	
+							<li>
+		
+								<em class="tit">특허결정(심결)연월일</em>
+	
+								<span>2016년 11월 25일</span>
+	
+							</li>
+	
+							<li>
+		
+								<em class="tit">청구범위의항수</em>
+	
+								<span>3</span>
+	
+							</li>
+	
+							<li>
+		
+								<em class="tit">유별</em>
+	
+								<span>E06B 5/16</span>
+	
+							</li>
+	
+							<li>
+		
+								<em class="tit">발명의명칭</em>
+	
+								<span>방화문용 틈새 막음 장치</span>
+	
+							</li>
+	
+							<li>
+		
+								<em class="tit">존속기간(예정)만료일</em>
+	
+								<span>2036년 04월 07일</span>
+	
+							</li>
+	
+						</ul>

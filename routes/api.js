@@ -4,6 +4,10 @@ const router = express.Router();
 const patentService = require('../services/patentService');
 const axios = require('axios');
 
+// 크롤링 API 임포트
+const crawlPatents = require('../api/crawl-patents');
+const getPatentDetailsBulk = require('../api/get-patent-details-bulk');
+
 // 등록특허 검색 API
 router.post('/search-registered', async (req, res) => {
     try {
@@ -14,54 +18,32 @@ router.post('/search-registered', async (req, res) => {
             nodeEnv: process.env.NODE_ENV
         });
         
-        const { searchType, searchValue, customerNumber } = req.body;
+        const { customerNumber } = req.body;
         
-        // 검색값 결정 (신규 방식 우선, 기존 호환성 유지)
-        let finalSearchValue = searchValue || customerNumber;
-        let finalSearchType = searchType || 'customerNumber';
-        
-        if (!finalSearchValue) {
-            console.log('❌ 검색값 없음');
+        if (!customerNumber) {
+            console.log('❌ 고객번호 없음');
             return res.status(400).json({
                 success: false,
-                error: '검색값을 입력해주세요.'
+                error: '고객번호를 입력해주세요.'
             });
         }
 
-        // 검색값 정리
-        const cleanedSearchValue = finalSearchValue.trim();
-        console.log('🔢 정리된 검색값:', cleanedSearchValue, '타입:', finalSearchType);
+        // 고객번호 정리 및 검증
+        const cleanedCustomerNumber = customerNumber.trim();
+        console.log('🔢 정리된 고객번호:', cleanedCustomerNumber);
         
-        // 검색 유형별 검증
-        if (finalSearchType === 'customerNumber') {
-            // 고객번호: 12자리 숫자 검증
-            if (!/^\d{12}$/.test(cleanedSearchValue)) {
-                console.log('❌ 고객번호 형식 오류:', cleanedSearchValue);
-                return res.status(400).json({
-                    success: false,
-                    error: '고객번호는 12자리 숫자여야 합니다.'
-                });
-            }
-        } else if (finalSearchType === 'rightHolderName') {
-            // 특허권자명: 최소 2글자 검증
-            if (cleanedSearchValue.length < 2) {
-                console.log('❌ 특허권자명 길이 오류:', cleanedSearchValue);
-                return res.status(400).json({
-                    success: false,
-                    error: '특허권자명을 2글자 이상 입력해주세요.'
-                });
-            }
-        } else {
-            console.log('❌ 지원하지 않는 검색 유형:', finalSearchType);
+        // 고객번호: 12자리 숫자 검증
+        if (!/^\d{12}$/.test(cleanedCustomerNumber)) {
+            console.log('❌ 고객번호 형식 오류:', cleanedCustomerNumber);
             return res.status(400).json({
                 success: false,
-                error: '지원하지 않는 검색 유형입니다.'
+                error: '고객번호는 12자리 숫자여야 합니다.'
             });
         }
         
         console.log('🚀 특허 서비스 호출 시작');
         // 등록특허 정보 조회
-        const result = await patentService.searchRegisteredPatents(cleanedSearchValue, finalSearchType);
+        const result = await patentService.searchRegisteredPatents(cleanedCustomerNumber);
         console.log('✅ 특허 서비스 결과:', { 
             totalCount: result?.totalCount, 
             patentsLength: result?.patents?.length 
@@ -252,6 +234,8 @@ router.post('/export-excel', async (req, res) => {
         const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         const filename = type === 'registered' 
             ? `등록특허현황_${currentDate}.xlsx` 
+            : type === 'fee-search'
+            ? `연차료조회_${currentDate}.xlsx`
             : `출원특허현황_${currentDate}.xlsx`;
         
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -363,5 +347,310 @@ router.post('/send-renewal-request', async (req, res) => {
         });
     }
 });
+
+// 크롤링 기반 특허 검색 API
+router.post('/crawl-patents', crawlPatents);
+
+// 벌크 상세정보 조회 API  
+router.post('/get-patent-details-bulk', getPatentDetailsBulk);
+
+// 크롤링 테스트 API
+router.get('/test-crawling', async (req, res) => {
+    try {
+        console.log('🧪 크롤링 테스트 API 호출');
+        
+        const { chromium } = require('playwright');
+        
+        let browser;
+        try {
+            browser = await chromium.launch({ headless: true });
+            console.log('✅ Playwright 브라우저 실행 성공');
+            
+            const page = await browser.newPage();
+            await page.goto('https://www.google.com');
+            const title = await page.title();
+            
+            await browser.close();
+            
+            res.json({
+                success: true,
+                message: 'Playwright 테스트 성공',
+                pageTitle: title,
+                timestamp: new Date().toISOString()
+            });
+            
+        } catch (error) {
+            if (browser) await browser.close();
+            throw error;
+        }
+        
+    } catch (error) {
+        console.error('❌ 크롤링 테스트 오류:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
+});
+
+// 크롤링 + 상세정보 조회 통합 API (크롤링3.py 방식)
+router.post('/search-patents-by-customer', async (req, res) => {
+    try {
+        console.log('🔍 통합 특허 검색 API 호출:', req.body);
+        
+        const { customerNumber } = req.body;
+        
+        if (!customerNumber) {
+            return res.status(400).json({
+                success: false,
+                error: '고객번호를 입력해주세요.'
+            });
+        }
+        
+        // 고객번호 형식 검증
+        if (!/^\d{12}$/.test(customerNumber.trim())) {
+            return res.status(400).json({
+                success: false,
+                error: '고객번호는 12자리 숫자여야 합니다.'
+            });
+        }
+        
+        console.log('🚀 1단계: KIPRIS 크롤링으로 출원번호 수집');
+        
+        // 1단계: 크롤링으로 출원번호 수집
+        const crawlReq = { 
+            method: 'POST',
+            body: { customerNumber: customerNumber.trim() }
+        };
+        
+        let crawlResult;
+        try {
+            crawlResult = await new Promise((resolve, reject) => {
+                const mockRes = {
+                    json: (data) => resolve(data),
+                    status: (code) => ({ json: (data) => resolve({ ...data, statusCode: code }) }),
+                    setHeader: () => {},
+                    end: () => {}
+                };
+                
+                crawlPatents(crawlReq, mockRes).catch(reject);
+            });
+        } catch (error) {
+            console.error('❌ 크롤링 단계 오류:', error);
+            return res.status(500).json({
+                success: false,
+                error: '출원번호 크롤링 중 오류가 발생했습니다.',
+                details: error.message
+            });
+        }
+        
+        if (!crawlResult.success || !crawlResult.applicationNumbers || crawlResult.applicationNumbers.length === 0) {
+            return res.json({
+                success: true,
+                customerNumber: customerNumber,
+                applicationNumbers: [],
+                patents: [],
+                totalCount: 0,
+                message: '해당 고객번호로 등록된 특허를 찾을 수 없습니다.',
+                crawledAt: new Date().toISOString()
+            });
+        }
+        
+        console.log(`✅ 크롤링 완료: ${crawlResult.applicationNumbers.length}건의 출원번호 발견`);
+        console.log('🔍 2단계: 출원번호별 상세정보 조회');
+        
+        // 2단계: 상세정보 조회
+        const detailReq = {
+            method: 'POST',
+            body: { applicationNumbers: crawlResult.applicationNumbers }
+        };
+        
+        let detailResult;
+        try {
+            detailResult = await new Promise((resolve, reject) => {
+                const mockRes = {
+                    json: (data) => resolve(data),
+                    status: (code) => ({ json: (data) => resolve({ ...data, statusCode: code }) }),
+                    setHeader: () => {},
+                    end: () => {}
+                };
+                
+                getPatentDetailsBulk(detailReq, mockRes).catch(reject);
+            });
+        } catch (error) {
+            console.error('❌ 상세정보 조회 단계 오류:', error);
+            return res.status(500).json({
+                success: false,
+                error: '특허 상세정보 조회 중 오류가 발생했습니다.',
+                details: error.message
+            });
+        }
+        
+        if (!detailResult.success) {
+            return res.status(500).json({
+                success: false,
+                error: '특허 상세정보 조회에 실패했습니다.',
+                details: detailResult.error
+            });
+        }
+        
+        console.log(`✅ 상세정보 조회 완료: ${detailResult.patents.length}건`);
+        
+        // 3단계: 결과 통합 및 반환
+        const result = {
+            success: true,
+            customerNumber: customerNumber,
+            applicationNumbers: crawlResult.applicationNumbers,
+            patents: detailResult.patents || [],
+            totalCount: detailResult.patents ? detailResult.patents.length : 0,
+            crawlingInfo: {
+                method: crawlResult.method,
+                crawledCount: crawlResult.count,
+                validCount: detailResult.validCount,
+                retrievedCount: detailResult.retrievedCount
+            },
+            crawledAt: new Date().toISOString()
+        };
+        
+        console.log(`🎉 통합 검색 완료: ${result.totalCount}건의 특허 정보 반환`);
+        
+        res.json(result);
+        
+    } catch (error) {
+        console.error('❌ 통합 특허 검색 오류:', error);
+        
+        res.status(500).json({
+            success: false,
+            error: '통합 특허 검색 중 오류가 발생했습니다.',
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
+});
+
+// 연차료 조회 API
+router.post('/search-fee', async (req, res) => {
+    try {
+        const { customerNumber } = req.body;
+        
+        if (!customerNumber) {
+            return res.status(400).json({
+                success: false,
+                error: '고객번호를 입력해주세요.'
+            });
+        }
+
+        // 고객번호 정리 및 검증
+        const cleanedCustomerNumber = customerNumber.trim();
+        
+        // 고객번호: 12자리 숫자 검증
+        if (!/^\d{12}$/.test(cleanedCustomerNumber)) {
+            return res.status(400).json({
+                success: false,
+                error: '고객번호는 12자리 숫자여야 합니다.'
+            });
+        }
+        
+        console.log('🔍 연차료 조회 API 호출:', cleanedCustomerNumber);
+        
+        // CSV 파일에서 데이터 검색
+        const feeData = await searchFeeFromCSV(cleanedCustomerNumber);
+        
+        res.json({
+            success: true,
+            customerNumber: cleanedCustomerNumber,
+            totalCount: feeData.length,
+            feeRecords: feeData
+        });
+
+    } catch (error) {
+        console.error('연차료 조회 오류:', error);
+        
+        if (process.env.NODE_ENV === 'development') {
+            return res.status(500).json({
+                success: false,
+                error: error.message,
+                stack: error.stack
+            });
+        }
+        
+        res.status(500).json({
+            success: false,
+            error: '연차료 정보를 조회하는 중 오류가 발생했습니다.'
+        });
+    }
+});
+
+// CSV 파일에서 연차료 데이터 검색 함수
+async function searchFeeFromCSV(customerNumber) {
+    const fs = require('fs').promises;
+    const path = require('path');
+    
+    try {
+        const csvPath = path.join(__dirname, '..', 'result_fee.csv');
+        const csvContent = await fs.readFile(csvPath, 'utf-8');
+        
+        // CSV 파싱 (간단한 방식)
+        const lines = csvContent.split('\n');
+        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        
+        console.log('📋 CSV 헤더:', headers);
+        
+        const results = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            // CSV 파싱 (콤마로 분할, 따옴표 처리)
+            const values = parseCSVLine(line);
+            
+            if (values.length > 0 && values[0] === customerNumber) {
+                const record = {};
+                
+                // 첫 번째 컬럼(고객번호)을 제외한 나머지 컬럼들을 객체로 변환
+                for (let j = 1; j < headers.length; j++) {
+                    const key = headers[j];
+                    const value = values[j] || '-';
+                    record[key] = value;
+                }
+                
+                results.push(record);
+            }
+        }
+        
+        console.log(`✅ 고객번호 ${customerNumber}에 대한 연차료 데이터 ${results.length}건 조회됨`);
+        return results;
+        
+    } catch (error) {
+        console.error('CSV 파일 읽기 오류:', error);
+        throw error;
+    }
+}
+
+// 간단한 CSV 라인 파싱 함수 (콤마와 따옴표 처리)
+function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        
+        if (char === '"') {
+            inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+            result.push(current.trim().replace(/^"|"$/g, ''));
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    
+    // 마지막 값 추가
+    result.push(current.trim().replace(/^"|"$/g, ''));
+    
+    return result;
+}
 
 module.exports = router;

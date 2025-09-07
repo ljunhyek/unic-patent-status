@@ -1,5 +1,5 @@
-// registered.js - 등록특허 현황 검색 기능
-console.log('🔄 등록특허 검색 스크립트 로드됨 - 버전: 2025.08.21.v3');
+// patent-search.js - 등록특허 조회 기능 (크롤링 기반)
+console.log('🔄 등록특허 조회 스크립트 로드됨 - 버전: 2025.09.06.v1');
 
 let currentPatents = [];
 let currentPage = 1;
@@ -12,7 +12,7 @@ window.itemsPerPage = itemsPerPage;
 
 // DOM 로드 완료 후 실행
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ DOM 로드 완료 - 등록특허 검색 초기화');
+    console.log('✅ DOM 로드 완료 - 등록특허 조회 초기화');
     
     // 검색 폼 이벤트 리스너
     const searchForm = document.getElementById('searchForm');
@@ -25,11 +25,10 @@ document.addEventListener('DOMContentLoaded', function() {
     setupButtonListeners();
 });
 
-
 // 검색 처리 함수
 async function handleSearch(e) {
     e.preventDefault();
-    console.log('🔍 검색 시작');
+    console.log('🔍 KIPRIS 크롤링 검색 시작');
     
     // 고객번호 입력값 확인
     const searchValue = document.getElementById('customerNumber').value.trim();
@@ -44,58 +43,78 @@ async function handleSearch(e) {
     
     const originalText = searchBtn.innerHTML;
     hideError();
-    showLoading(searchBtn);
+    showSearchStatus('🌐 KIPRIS 사이트에 접속 중...', '브라우저를 실행하여 KIPRIS에 접속합니다');
     
     try {
-        // API 호출
-        console.log('🌐 API 호출 시작');
-        const requestBody = {
-            customerNumber: searchValue
-        };
+        // 통합 API 호출 (크롤링 + 상세정보 조회)
+        console.log('🌐 통합 특허 검색 API 호출 시작');
+        showSearchStatus('🔍 KIPRIS에서 검색 중...', '크롤링3.py 방식으로 고객번호를 검색하여 출원번호를 수집하고 상세정보를 조회합니다');
         
-        console.log('📤 API 요청 데이터:', requestBody);
-        
-        const response = await fetch('/api/search-registered', {
+        const searchResponse = await fetch('/api/search-patents-by-customer', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify({ customerNumber: searchValue })
         });
         
-        const data = await response.json();
-        console.log('📊 API 응답:', data);
+        const searchData = await searchResponse.json();
+        console.log('📊 통합 검색 응답:', searchData);
         
-        if (!data.success) {
-            throw new Error(data.error || '검색 중 오류가 발생했습니다.');
+        if (!searchData.success) {
+            throw new Error(searchData.error || '특허 검색 중 오류가 발생했습니다.');
         }
+        
+        if (!searchData.patents || searchData.patents.length === 0) {
+            showSearchStatus('❌ 검색 완료', '해당 고객번호로 등록된 특허를 찾을 수 없습니다.');
+            hideResults();
+            setTimeout(hideSearchStatus, 3000);
+            return;
+        }
+        
+        console.log('✅ 통합 검색 완료:', searchData.patents.length + '건의 특허 발견');
         
         // 결과 표시
-        displayResults(data);
-        console.log('✅ 결과 표시 완료');
-        
-        // 상세 정보 조회 (옵션)
-        try {
-            if (data.patents && data.patents.length > 0) {
-                console.log('🔍 상세 정보 조회 시작');
-                showDetailLoadingMessage();
-                await fetchPatentDetails(data.patents);
-                hideDetailLoadingMessage();
-                console.log('✅ 상세 정보 조회 완료');
+        displayResults({
+            customerNumber: searchValue,
+            applicantName: '크롤링 검색 결과',
+            totalCount: searchData.patents.length,
+            patents: searchData.patents,
+            crawlingInfo: {
+                foundApplicationNumbers: searchData.applicationNumbers ? searchData.applicationNumbers.length : 0,
+                detailedPatents: searchData.patents.length,
+                method: searchData.crawlingInfo ? searchData.crawlingInfo.method : 'KIPRIS 크롤링'
             }
-        } catch (detailError) {
-            console.warn('⚠️ 상세 정보 조회 실패:', detailError);
-            hideDetailLoadingMessage();
-        }
+        });
+        
+        hideSearchStatus();
+        console.log('✅ 검색 완료');
         
     } catch (error) {
         console.error('❌ 검색 오류:', error);
         showError(error.message);
         hideResults();
-        hideDetailLoadingMessage();
+        hideSearchStatus();
     } finally {
-        hideLoading(searchBtn, originalText);
+        searchBtn.innerHTML = originalText;
     }
+}
+
+// 검색 상태 표시 함수
+function showSearchStatus(message, details) {
+    const statusSection = document.getElementById('searchStatus');
+    const statusMessage = document.getElementById('statusMessage');
+    const statusDetails = document.getElementById('statusDetails');
+    
+    statusMessage.textContent = message;
+    statusDetails.textContent = details || '';
+    statusSection.style.display = 'block';
+}
+
+// 검색 상태 숨기기 함수
+function hideSearchStatus() {
+    const statusSection = document.getElementById('searchStatus');
+    statusSection.style.display = 'none';
 }
 
 // 결과 표시 함수
@@ -115,7 +134,6 @@ function displayResults(data) {
     
     document.getElementById('resultCurrentDate').textContent = currentDate;
     document.getElementById('resultCustomerNumber').textContent = data.customerNumber;
-    document.getElementById('resultApplicantName').textContent = data.applicantName;
     document.getElementById('resultTotalCount').textContent = data.totalCount;
     
     const resultsSection = document.getElementById('resultsSection');
@@ -334,102 +352,6 @@ function changePage(page) {
     });
 }
 
-// 특허 상세 정보 조회
-async function fetchPatentDetails(patents) {
-    if (!patents || patents.length === 0) return;
-    
-    try {
-        const applicationNumbers = patents.map(p => p.applicationNumber).filter(num => num && num !== '-');
-        
-        if (applicationNumbers.length === 0) return;
-        
-        const response = await fetch('/api/get-patent-details', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ applicationNumbers })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success && data.details) {
-            updatePatentTable(data.details);
-        }
-        
-    } catch (error) {
-        console.error('상세 정보 조회 오류:', error);
-    }
-}
-
-// 특허 테이블 업데이트
-function updatePatentTable(details) {
-    const tableBody = document.getElementById('patentTableBody');
-    const rows = tableBody.getElementsByTagName('tr');
-    
-    currentPatents.forEach((patent, index) => {
-        if (index >= rows.length) return;
-        
-        const row = rows[index];
-        const cells = row.getElementsByTagName('td');
-        const applicationNumber = patent.applicationNumber;
-        
-        if (details[applicationNumber]) {
-            const detail = details[applicationNumber];
-            
-            if (detail.registrationNumber && detail.registrationNumber !== '-') {
-                cells[1].textContent = detail.registrationNumber;
-                currentPatents[index].registrationNumber = detail.registrationNumber;
-                window.currentPatents[index].registrationNumber = detail.registrationNumber;
-            }
-            
-            if (detail.registrationDate && detail.registrationDate !== '-') {
-                cells[5].textContent = formatDate(detail.registrationDate);
-                currentPatents[index].registrationDate = detail.registrationDate;
-                window.currentPatents[index].registrationDate = detail.registrationDate;
-            }
-            
-            if (detail.expirationDate && detail.expirationDate !== '-') {
-                cells[6].textContent = formatDate(detail.expirationDate);
-                currentPatents[index].expirationDate = detail.expirationDate;
-                window.currentPatents[index].expirationDate = detail.expirationDate;
-            }
-            
-            if (detail.claimCount && detail.claimCount !== '-') {
-                cells[8].textContent = detail.claimCount;
-                currentPatents[index].claimCount = detail.claimCount;
-                window.currentPatents[index].claimCount = detail.claimCount;
-            }
-        }
-    });
-}
-
-// 상세 정보 로딩 메시지
-function showDetailLoadingMessage() {
-    const existingMessage = document.querySelector('.detail-loading-message');
-    if (existingMessage) {
-        existingMessage.remove();
-    }
-
-    const loadingDiv = document.createElement('div');
-    loadingDiv.className = 'detail-loading-message';
-    loadingDiv.innerHTML = '🔍 상세 정보를 조회 중입니다...';
-    loadingDiv.style.cssText = 'background: #e0f2fe; color: #01579b; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; text-align: center;';
-    
-    const resultsSection = document.getElementById('resultsSection');
-    const tableContainer = resultsSection.querySelector('.table-container');
-    if (tableContainer) {
-        tableContainer.before(loadingDiv);
-    }
-}
-
-function hideDetailLoadingMessage() {
-    const existingMessage = document.querySelector('.detail-loading-message');
-    if (existingMessage) {
-        existingMessage.remove();
-    }
-}
-
 // 결과 숨기기
 function hideResults() {
     document.getElementById('resultsSection').style.display = 'none';
@@ -446,14 +368,14 @@ function requestRenewalFee() {
     
     // 고객번호와 첫 번째 출원인 이름 가져오기
     const customerNumber = document.getElementById('resultCustomerNumber').textContent;
-    const applicantName = document.getElementById('resultApplicantName').textContent;
+    const applicantName = '크롤링 검색 결과'; // 크롤링 기반이므로 고정값
     
     console.log('고객정보:', { customerNumber, applicantName });
     
     showRenewalRequestModal(customerNumber, applicantName);
 }
 
-// 연차료 납부의뢰 모달 표시
+// 연차료 납부의뢰 모달 표시 (registered.js와 동일)
 function showRenewalRequestModal(customerNumber, applicantName) {
     // 모달 닫기 함수를 전역으로 등록
     window.closeRenewalModal = function() {
@@ -479,12 +401,12 @@ function showRenewalRequestModal(customerNumber, applicantName) {
         '<form action="https://api.web3forms.com/submit" method="POST" id="renewalRequestForm">' +
         '<input type="hidden" name="access_key" value="dd3c9ad5-1802-4bd1-b7e6-397002308afa">' +
         '<input type="hidden" name="redirect" value="' + window.location.origin + '/thanks">' +
-        '<input type="hidden" name="subject" value="연차료 납부의뢰">' +
+        '<input type="hidden" name="subject" value="연차료 납부의뢰 (크롤링 검색)">' +
         '<div style="margin-bottom: 1rem;"><label style="display: block; color: #374151; font-weight: 500; margin-bottom: 0.5rem;">고객번호</label><input type="text" name="customer_number" id="customer_number" value="' + customerNumber + '" readonly style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px; background: #f9fafb; color: #6b7280;"></div>' +
-        '<div style="margin-bottom: 1rem;"><label style="display: block; color: #374151; font-weight: 500; margin-bottom: 0.5rem;">이름</label><input type="text" name="name" id="applicant_name" value="' + applicantName + '" readonly style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px; background: #f9fafb; color: #6b7280;"></div>' +
+        '<div style="margin-bottom: 1rem;"><label style="display: block; color: #374151; font-weight: 500; margin-bottom: 0.5rem;">검색방법</label><input type="text" name="search_method" id="search_method" value="KIPRIS 크롤링 검색" readonly style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px; background: #f9fafb; color: #6b7280;"></div>' +
         '<div style="margin-bottom: 1rem;"><label style="display: block; color: #374151; font-weight: 500; margin-bottom: 0.5rem;">이메일 <span style="color: #ef4444;">*</span></label><input type="email" name="email" id="email" required style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px;" placeholder="example@email.com"></div>' +
         '<div style="margin-bottom: 1.5rem;"><label style="display: block; color: #374151; font-weight: 500; margin-bottom: 0.5rem;">연락처 <span style="color: #ef4444;">*</span></label><input type="tel" name="phone" id="phone" required style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px;" placeholder="010-0000-0000"></div>' +
-        '<textarea name="message" style="display: none;">연차료 납부의뢰 - 고객번호: ' + customerNumber + ', 고객명: ' + applicantName + '</textarea>' +
+        '<textarea name="message" style="display: none;">연차료 납부의뢰 (크롤링 검색) - 고객번호: ' + customerNumber + ', 검색방법: KIPRIS 크롤링</textarea>' +
         '<div style="margin-bottom: 1.5rem; border: 1px solid #d1d5db; border-radius: 4px; background: #f9fafb; padding: 1rem; font-size: 0.9rem; color: #6b7280; line-height: 1.5;">' +
         '<p style="margin: 0 0 0.5rem 0;"><strong>개인정보 수집 및 이용 동의</strong></p>' +
         '<p style="margin: 0 0 0.5rem 0;">수집·이용 목적: 연차료 납부 대행 처리</p>' +
@@ -506,54 +428,8 @@ function showRenewalRequestModal(customerNumber, applicantName) {
         closeRenewalModal();
     });
     
-    console.log('✅ 납부의뢰 모달 생성 완료 - Web3Forms 연동');
+    console.log('✅ 납부의뢰 모달 생성 완료 - Web3Forms 연동 (크롤링 버전)');
 }
-
-// 페이지네이션 테스트용 데이터 생성 함수
-function generateTestData(basePatent, count) {
-    const testPatents = [];
-    for (let i = 0; i < count; i++) {
-        testPatents.push({
-            ...basePatent,
-            applicationNumber: `102022012${String(i + 1).padStart(4, '0')}`,
-            registrationNumber: `102823596${String(i + 1).padStart(4, '0')}`,
-            applicantName: `테스트 출원자 ${i + 1}호 - 매우 긴 회사명을 가진 주식회사`,
-            inventionTitle: `테스트 발명 제목 ${i + 1}번 - 매우 긴 발명의 명칭으로 툴팁 기능을 테스트하기 위한 샘플 데이터입니다`,
-            applicationDate: `2022-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`,
-            registrationDate: `2023-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`
-        });
-    }
-    return testPatents;
-}
-
-// 페이지네이션 테스트 함수 (개발자 콘솔에서 사용)
-window.testPagination = function(count = 23) {
-    console.log(`📊 페이지네이션 테스트 시작: ${count}개 데이터`);
-    
-    const basePatent = currentPatents.length > 0 ? currentPatents[0] : {
-        applicationNumber: "1020220000000",
-        registrationNumber: "1028235960000",
-        applicantName: "테스트 회사",
-        inventorName: "-",
-        applicationDate: "2022-01-01",
-        registrationDate: "2023-01-01",
-        publicationDate: "2023-01-07",
-        expirationDate: "-",
-        inventionTitle: "테스트 발명",
-        claimCount: "-",
-        registrationStatus: "등록"
-    };
-    
-    const testData = {
-        customerNumber: "TEST123456789",
-        applicantName: "테스트 출원자",
-        totalCount: count,
-        patents: generateTestData(basePatent, count)
-    };
-    
-    displayResults(testData);
-    console.log(`✅ 테스트 완료: ${count}개 데이터, 총 ${Math.ceil(count / itemsPerPage)}페이지`);
-};
 
 // 버튼 이벤트 리스너 설정
 function setupButtonListeners() {
@@ -595,4 +471,20 @@ function setupButtonListeners() {
     }
 }
 
-console.log('✅ 등록특허 검색 스크립트 로드 완료');
+// 연차료 계산 메인 함수 (기존과 동일)
+function calculateAnnuityFees() {
+    // 외부 스크립트의 currentPatents 변수 사용
+    if (!window.currentPatents || window.currentPatents.length === 0) {
+        showError('계산할 특허가 없습니다.');
+        return;
+    }
+    
+    // 감면 유형 선택 모달 표시 (registered.ejs와 동일한 함수 사용)
+    if (typeof showDiscountSelectionModal === 'function') {
+        showDiscountSelectionModal();
+    } else {
+        console.warn('감면 선택 모달 함수를 찾을 수 없습니다.');
+    }
+}
+
+console.log('✅ 등록특허 조회 스크립트 로드 완료 (크롤링 기반)');
