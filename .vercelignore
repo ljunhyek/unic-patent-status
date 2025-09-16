@@ -1,25 +1,17 @@
-# Vercel ignore file
-.env
-.env.local
-.env.example
-.git
-.gitignore
+# Vercel 배포 시 제외할 파일들
 node_modules
+.git
+.env.local
+.env
 *.log
 *.txt
-*.hwp
-*.pptx
+*.py
 *.ini
-vercel_*.png
-test-*.html
-test-*.js
-각종명령들.txt
-각종입력필드.txt
-고객번호.*
-납부의뢰.txt
-pct의뢰.txt
-업데이트명령어.txt
-출원특허*.txt
-특허청*.txt
-홈페이지*.pptx
-📊*.txt
+*.csv
+*.jpg
+*.png
+*.zip
+archive/
+server.local.js
+nodemon.json
+.claude/

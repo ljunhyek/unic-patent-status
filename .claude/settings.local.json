@@ -44,7 +44,9 @@
       "Bash(npm install:*)",
       "Bash(move C:ipunic-patent-statusviewspatent-search.ejs C:ipunic-patent-statusarchivepatent-search-deprecated)",
       "Bash(sed:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(git push:*)",
+      "Bash(git rev-parse:*)"
     ],
     "deny": [],
     "ask": []
