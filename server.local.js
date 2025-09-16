@@ -57,6 +57,24 @@ if (process.env.NODE_ENV === 'development') {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// 1차 목록 크롤러 가져오기
+const { crawlKiprisList } = require('./crawler');
+
+// 1차 목록 API: 고객번호로 KIPRIS 검색 → 목록 반환
+app.post('/api/list-by-customer', async (req, res, next) => {
+  try {
+    const { customerNumber } = req.body || {};
+    if (!customerNumber) {
+      return res.status(400).json({ error: 'customerNumber is required' });
+    }
+    // 프로젝트 정책: 1차만 사용 (2차 상세조회 없음)
+    const items = await crawlKiprisList(String(customerNumber).trim());
+    return res.json({ items: Array.isArray(items) ? items : [] });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // View Engine 설정
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -65,11 +83,11 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // 라우트 파일들
-const patentApiRoutes = require('./routes/api');
 const webRoutes = require('./routes/web');
+const apiRoutes = require('./routes/api');
 
 // API 라우트
-app.use('/api', patentApiRoutes);
+app.use('/api', apiRoutes);
 
 // 웹 페이지 라우트
 app.use('/', webRoutes);

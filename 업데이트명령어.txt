@@ -2,3 +2,13 @@ git add .
 git commit -m "Fix: Make admin data loading more robust"
 git push
 
+
+                                                     
+                                                     
+                                                     
+                                                     await page.goto("https://www.kipris.or.kr/khome/main.do")  
+
+                                                     py find_number2.py --customer 120230740981
+
+                                                     
+                                                     

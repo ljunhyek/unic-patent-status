@@ -1,0 +1,18 @@
+
+<1단계 검색 >
+ 1. 키프리스 검색 페이지에서 https://www.kipris.or.kr/khome/search/searchResult.do로 들어가서 , 사용자가 입력한 고객번호를 최종권리자 검색어 키로 하여(예시 TRH=[120230740981])
+ 출원번호(일자), 등록번호(일자), 출원인 정보(대표 1명만 가져옴), 제목(국문명칭만, 영어 제목은 제외)만 크롤링해와서 registerd.ejs 화면에 목록으로 표시, (현재 구현된 로직 활용)
+ (기타 제목을 누른 경우 등록정보를 찾는 것 등 관련 코딩은 모두 삭제) 
+ <2단계 검색 > - 화면에 표시된 등록번호(숫자 13자리)를 key로 하여 다음 프로세스 진행, 이미 일부 로직이 구현된 crawler.js 참고
+  1. https://www.patent.go.kr/smart/jsp/kiponet/ma/mamarkapply/infomodifypatent/ReadMyPatApplInfo.dov페이지에서 
+  사건번호별 검색이 눌러진 상태로 만들고 (참조classname= 'tabNav_wrap', <li id="caseNumberTab">, <a href="javascript:fnSearchDivDisplay('caseNumber');"><span>사건번호별검색</span></a></li><a href="javascript:fnSearchDivDisplay('caseNumber');">
+  <span>사건번호별검색</span></a>) 2. 사건번호에 등록번호가 선택된 상태로 만들 것, 
+  3. 여기서 등록번호를 '등록특허 조회' 웹페이지의 목록에 표시된 등록번호를 key로 하여 '검색'버튼을 누를 것
+   4. 검색버튼을 누르면 나타나는 웹페이지임 https://www.patent.go.kr/smart/jsp/kiponet/ma/mamarkapply/infomodifypatent/ReadChgFrmRgstInfo.do 
+   5. 이 웹페이지에서 등록상태 값(예시"소멸등록(등록료불납)), 청구범위 항수(숫자), 
+   존속기간 만료일자를 크롤링하여 화면에 표시 6. 만약 등록상태 값이 '등록유지'가 아닌 경우 목록의 '유효/불납' 란에 '불납' 표시하고 종료 
+   7. 만약 등록상태 값이 '등록유지'인 경우 연차 등록정보의 맨 마지막 행의 연차, 납일일, 납임금액 데이터를 크롤링해서 가져오고, 
+   이것을 각각 해당 연차수, 해당 연차료 납부마감일, 해당연차료에 표시 8. 연차 등록정보 테이블의 맨 마지막 -1 행에서 연차, 납입일,
+    납임금액을 크롤링으로 가져와서 화면 목록중 직전년도 납부연월에 '납입일(연차, 납입금액)' 으로 표시
+    주의사항 : 나는 이 프로젝트에 있는 등록특허 조회(patent-search.ejs)에서 '연차료 계산' 버튼을 누른 경우에는 기존 연차료 계산하는 로직에 따라 보여주는 기능을 그대로 두고 싶어,
+  다시한번 말하지만  현재 등록특허 현황 웹페이지(registered.ejs)에서는 연차료 계산 해서 가져오는 로직은 반영하지 말고, 내가 말한 2단계 로직으로 처리하는 것으로 진행했으면 해,

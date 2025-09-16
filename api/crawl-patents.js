@@ -58,15 +58,19 @@ module.exports = async (req, res) => {
         }
         
         // KIPRIS 크롤링 실행
-        const applicationNumbers = await getApplicationNumbers(customerNumber);
+        const patents = await getPatentDetails(customerNumber);
         
-        console.log('✅ 크롤링 완료:', applicationNumbers.length, '건');
+        console.log('✅ 크롤링 완료:', patents.length, '건');
+        
+        // 출원번호만 추출하여 기존 API 호환성 유지
+        const applicationNumbers = patents.map(patent => patent.출원번호).filter(num => num && num !== '-');
         
         res.json({
             success: true,
             customerNumber: customerNumber,
             applicationNumbers: applicationNumbers,
-            count: applicationNumbers.length,
+            patents: patents,  // 상세정보 포함
+            count: patents.length,
             crawledAt: new Date().toISOString(),
             method: 'KIPRIS 크롤링 (Playwright)'
         });
@@ -83,12 +87,12 @@ module.exports = async (req, res) => {
 };
 
 /**
- * KIPRIS에서 고객번호로 검색하여 출원번호를 추출하는 함수 (크롤링3.py 포팅)
+ * KIPRIS에서 고객번호로 검색하여 특허 상세정보를 추출하는 함수 (크롤링_등록사항.py 포팅)
  * 
  * @param {string} customerNumber - 12자리 고객번호
- * @returns {Promise<string[]>} - 출원번호 리스트
+ * @returns {Promise<Array>} - 특허 상세정보 리스트
  */
-async function getApplicationNumbers(customerNumber) {
+async function getPatentDetails(customerNumber) {
     let browser;
     
     try {
@@ -149,75 +153,46 @@ async function getApplicationNumbers(customerNumber) {
         await page.waitForTimeout(5000); // 추가 대기 시간
         console.log('✅ 검색 결과 페이지 로딩 완료');
         
-        // 4. 출원번호 추출
-        console.log("📋 출원번호 추출 중...");
-        const applicationNumbers = [];
+        // 4. 서지정보 보기 모드 선택
+        console.log("📋 서지정보 보기 모드 설정 중...");
         
-        // 출원번호가 포함된 요소들 찾기 (여러 가능한 셀렉터 시도)
-        const selectors = [
-            "p.txt",  // 제공된 셀렉터
-            "td:has-text('20')",  // 출원번호가 20으로 시작하는 경우가 많음
-            "[class*='application']",  // application이 포함된 클래스
-            "span:has-text('20')"  // span 태그 내 출원번호
-        ];
-        
-        for (const selector of selectors) {
-            try {
-                const elements = await page.locator(selector).all();
-                
-                for (const element of elements) {
-                    const text = await element.innerText();
-                    // 12자리 또는 13자리 숫자 패턴 찾기 (출원번호)
-                    const matches = text.match(/\b(\d{12,13})\b/g);
-                    
-                    if (matches) {
-                        for (const match of matches) {
-                            if (!applicationNumbers.includes(match)) {
-                                applicationNumbers.push(match);
-                                console.log(`  ✅ 찾은 출원번호: ${match}`);
-                            }
-                        }
-                    }
-                }
-            } catch (error) {
-                // 특정 셀렉터에서 오류가 발생해도 계속 진행
-                console.log(`⚠️ 셀렉터 ${selector} 처리 중 오류 (무시): ${error.message}`);
-            }
-        }
-        
-        // 결과가 없는 경우 페이지 내용 확인
-        if (applicationNumbers.length === 0) {
-            console.log("❌ 출원번호를 찾을 수 없습니다. 페이지 구조를 확인 중...");
+        try {
+            // 서지정보 버튼 찾기
+            const seojiButton = await page.locator("button[data-view-option='seoji']").first();
+            const seojiButtonExists = await seojiButton.isVisible().catch(() => false);
             
-            try {
-                // 현재 페이지 URL 확인
-                const currentUrl = page.url();
-                console.log(`📍 현재 페이지 URL: ${currentUrl}`);
-                
-                // 페이지 제목 확인
-                const pageTitle = await page.title();
-                console.log(`📄 페이지 제목: ${pageTitle}`);
-                
-                // 디버깅을 위해 페이지 내용 일부 확인
-                const content = await page.content();
-                if (content.includes("검색결과가 없습니다") || content.includes("검색 결과가 없습니다")) {
-                    console.log("📭 KIPRIS에서 검색 결과가 없다고 응답했습니다.");
-                } else if (content.includes("오류") || content.includes("Error")) {
-                    console.log("⚠️ 페이지에서 오류 메시지가 감지되었습니다.");
+            if (seojiButtonExists) {
+                const classList = await seojiButton.getAttribute('class') || '';
+                if (!classList.includes('active')) {
+                    await seojiButton.click();
+                    await page.waitForTimeout(2000);
+                    console.log("    ✅ 서지정보 보기 모드 활성화");
                 } else {
-                    console.log("🔍 페이지 내용이 있지만 출원번호 패턴을 찾지 못했습니다.");
-                    // 페이지 내용의 일부를 로그에 출력 (처음 500자)
-                    console.log("📄 페이지 내용 샘플:", content.substring(0, 500));
+                    console.log("    ✅ 서지정보 보기 모드 이미 활성화됨");
                 }
-            } catch (debugError) {
-                console.log("⚠️ 디버그 정보 수집 중 오류:", debugError.message);
+            } else {
+                // 다른 선택자로 시도
+                const altSeojiButton = await page.locator("button:has-text('서지정보')").first();
+                const altButtonExists = await altSeojiButton.isVisible().catch(() => false);
+                
+                if (altButtonExists) {
+                    await altSeojiButton.click();
+                    await page.waitForTimeout(2000);
+                    console.log("    ✅ 서지정보 버튼 클릭 (대안 선택자)");
+                } else {
+                    console.log("    ⚠️ 서지정보 버튼을 찾을 수 없음 (기본 모드 사용)");
+                }
             }
-        } else {
-            console.log(`✅ 출원번호 추출 성공: ${applicationNumbers.join(', ')}`);
+        } catch (error) {
+            console.log(`    ⚠️ 서지정보 모드 설정 오류: ${error.message}`);
         }
         
-        console.log(`🎯 크롤링 완료 - 총 ${applicationNumbers.length}건의 출원번호 발견`);
-        return applicationNumbers;
+        // 5. 특허 정보 추출
+        console.log("📄 특허 정보 추출 중...");
+        const patents = await extractPatentDetails(page);
+        
+        console.log(`🎯 크롤링 완료 - 총 ${patents.length}건의 특허 발견`);
+        return patents;
         
     } catch (error) {
         console.error('❌ 크롤링 중 상세 오류 정보:');
@@ -285,4 +260,172 @@ function getMockApplicationNumbers(customerNumber) {
     
     console.log('✅ Mock 데이터 생성 완료:', applicationNumbers.length, '건');
     return applicationNumbers;
+}
+
+/**
+ * 검색 결과 페이지에서 특허 상세정보 추출 (크롤링_등록사항.py 포팅)
+ * 
+ * @param {Page} page - Playwright 페이지 객체
+ * @returns {Promise<Array>} - 특허 상세정보 배열
+ */
+async function extractPatentDetails(page) {
+    const patents = [];
+    
+    try {
+        // 검색 결과 아이템들 찾기
+        const resultItems = await page.locator("article.result-item").all();
+        console.log(`    총 ${resultItems.length}개의 결과 발견`);
+        
+        // Phase 1: 기본 특허 정보 모두 추출 (네비게이션 하지 않음)
+        const basicPatents = [];
+        for (let idx = 0; idx < resultItems.length; idx++) {
+            const item = resultItems[idx];
+            const patentInfo = {};
+            
+            try {
+                // 제목 추출 및 링크 저장
+                const titleElement = await item.locator("h1.title button").first();
+                const titleExists = await titleElement.isVisible().catch(() => false);
+                if (titleExists) {
+                    let title = await titleElement.innerText();
+                    // [1] 같은 번호 제거
+                    title = title.replace(/^\[\d+\]\s*/, '');
+                    patentInfo['제목'] = title.trim();
+                    patentInfo['titleElement'] = titleElement; // 나중에 사용할 링크 저장
+                }
+                
+                // 출원번호 및 출원일 추출
+                const appElement = await item.locator("em[data-lang-id='srlt.patent.an'] ~ div p.txt").first();
+                const appExists = await appElement.isVisible().catch(() => false);
+                if (appExists) {
+                    const appText = await appElement.innerText();
+                    // 1020160042595(2016-04-07) 형식 파싱
+                    const match = appText.match(/(\d+)\((\d{4}-\d{2}-\d{2})\)/);
+                    if (match) {
+                        patentInfo['출원번호'] = match[1];
+                        patentInfo['출원일'] = match[2];
+                    }
+                }
+                
+                // 등록번호 및 등록일 추출
+                const regElement = await item.locator("em[data-lang-id='srlt.patent.rn'] ~ div p.txt").first();
+                const regExists = await regElement.isVisible().catch(() => false);
+                if (regExists) {
+                    const regText = await regElement.innerText();
+                    const match = regText.match(/(\d+)\((\d{4}-\d{2}-\d{2})\)/);
+                    if (match) {
+                        patentInfo['등록번호'] = match[1];
+                        patentInfo['등록일'] = match[2];
+                    }
+                }
+                
+                // 출원인 추출 (첫 번째 1명만 추출)
+                let firstApplicant = '';
+                
+                // 첫 번째 버튼 요소에서 출원인 추출
+                const firstAppPersonElement = await item.locator("em[data-lang-id='srlt.patent.ap'] ~ div button").first();
+                const firstExists = await firstAppPersonElement.isVisible().catch(() => false);
+                
+                if (firstExists) {
+                    const text = await firstAppPersonElement.innerText();
+                    firstApplicant = text.trim();
+                } else {
+                    // 버튼이 없는 경우 p.txt에서 찾기
+                    const appPersonElement = await item.locator("em[data-lang-id='srlt.patent.ap'] ~ div p.txt").first();
+                    const appPersonExists = await appPersonElement.isVisible().catch(() => false);
+                    if (appPersonExists) {
+                        const fullText = await appPersonElement.innerText();
+                        // 콤마로 분리하여 첫 번째 이름만 추출
+                        const names = fullText.split(',');
+                        firstApplicant = names[0].trim();
+                    }
+                }
+                
+                patentInfo['출원인'] = firstApplicant;
+                
+                // 최종권리자 추출
+                const trhElement = await item.locator("em[data-lang-id='srlt.patent.trh'] ~ div button").first();
+                const trhExists = await trhElement.isVisible().catch(() => false);
+                if (trhExists) {
+                    const text = await trhElement.innerText();
+                    patentInfo['최종권리자'] = text.trim();
+                }
+                
+                basicPatents.push(patentInfo);
+                
+            } catch (error) {
+                console.log(`    특허 ${idx + 1} 기본정보 추출 오류: ${error.message}`);
+                continue;
+            }
+        }
+        
+        console.log(`    ✅ 기본정보 추출 완료: ${basicPatents.length}건`);
+        
+        // Phase 2: 청구범위 항수 추출 (각 특허별로 상세 페이지 방문)
+        for (let idx = 0; idx < basicPatents.length; idx++) {
+            const patentInfo = basicPatents[idx];
+            let claimCount = null;
+            
+            try {
+                console.log(`    [${idx + 1}] 상세정보 크롤링: ${patentInfo['제목'] || 'N/A'}`);
+                
+                // 제목 클릭하여 상세 페이지로 이동
+                if (patentInfo['titleElement']) {
+                    await patentInfo['titleElement'].click();
+                    await page.waitForLoadState("networkidle", { timeout: 15000 });
+                    
+                    // 사용자 제공 HTML 구조를 사용하여 청구범위 항수 추출
+                    const selectors = [
+                        '#docBase1 table.board_list th[scope="row"]:has-text("청구범위 항수") + td',
+                        'th:has-text("청구범위 항수") + td',
+                        'th:has-text("청구범위") + td', 
+                        'th:has-text("항수") + td',
+                        'table th:has-text("청구범위 항수") ~ td',
+                        '.board_list th:has-text("청구범위 항수") + td'
+                    ];
+                    
+                    for (const selector of selectors) {
+                        try {
+                            const element = await page.locator(selector).first();
+                            const exists = await element.isVisible().catch(() => false);
+                            
+                            if (exists) {
+                                const text = await element.textContent();
+                                if (text && text.trim() && /\d+/.test(text)) {
+                                    claimCount = text.trim();
+                                    console.log(`    ✅ 청구범위 항수 추출 성공: ${claimCount}`);
+                                    break;
+                                }
+                            }
+                        } catch (e) {
+                            // 계속 시도
+                        }
+                    }
+                    
+                    if (!claimCount) {
+                        console.log(`    ⚠️ 청구범위 항수 요소를 찾을 수 없음`);
+                    }
+                    
+                    // 뒤로가기
+                    await page.goBack();
+                    await page.waitForLoadState("networkidle", { timeout: 10000 });
+                }
+            } catch (detailError) {
+                console.log(`    ⚠️ 상세정보 크롤링 실패: ${detailError.message}`);
+            }
+            
+            // 청구범위 항수 저장 및 titleElement 제거
+            delete patentInfo['titleElement'];
+            patentInfo['청구범위항수'] = claimCount;
+            
+            console.log(`    [${idx + 1}] ${patentInfo['제목'] || 'N/A'} - ${patentInfo['출원번호'] || 'N/A'} (청구항수: ${claimCount || 'N/A'})`);
+            patents.push(patentInfo);
+        }
+        
+    } catch (error) {
+        console.log(`    검색 결과 파싱 오류: ${error.message}`);
+    }
+    
+    
+    return patents;
 }

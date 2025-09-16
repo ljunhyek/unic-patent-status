@@ -1,0 +1,97 @@
+KIPRIS 등록특허 조회 로직 개선
+코드 변경 지점별 설명
+
+routes/api.js (POST /search-registered): 기존에는 12자리 숫자로 된 고객번호만 입력받도록 검증하였으나
+GitHub
+, 이제 특허권자 명칭(회사명 등)도 검색어로 사용할 수 있도록 검증 로직을 완화합니다. 예를 들어, 입력값이 숫자가 아닌 경우에도 에러를 반환하지 않고 그대로 검색에 활용합니다. 필요하다면 cleanedNumber 변수명을 searchKey 등으로 변경하여 숫자 또는 이름 모두를 포괄하는 의미로 사용할 수 있습니다. 이 변경으로 사용자는 고객번호 또는 권리자 명칭을 입력해 조회할 수 있습니다.
+
+services/patentService.js (searchRegisteredPatents 함수): KIPRIS API 호출 부분을 **getWordSearch 대신 getAdvancedSearch**로 교체합니다.
+
+변경 전: getWordSearch 엔드포인트에 word 파라미터로 고객번호를 전달하여 검색했음
+GitHub
+. 이 방식은 해당 번호가 출원인으로 등록된 특허만 찾기 때문에, 권리가 이전된 특허의 새로운 권리자 번호로 검색하면 누락되는 문제가 있었습니다.
+
+변경 후: getAdvancedSearch 엔드포인트를 사용하고, rightHoler 파라미터에 사용자가 입력한 고객번호 또는 명칭을 넣어 검색합니다. rightHoler는 **특허권자(현재 권리자)**를 뜻하는 필드로, 해당 값에 대해 등록 특허를 조회합니다. 이때 기존에 사용하던 ServiceKey, numOfRows, pageNo 등의 파라미터는 동일하게 적용합니다. 예를 들어:
+
+const url = `${baseUrl}/patUtiModInfoSearchSevice/getAdvancedSearch`;
+const response = await axios.get(url, {
+  params: {
+    rightHoler: 검색어,      // 고객번호(12자리) 또는 권리자 이름
+    patent: true,           // 특허 포함 여부 (필요시 명시, 기본값 true)
+    utility: false,         // 실용신안 포함 여부 (필요시 명시, 등록특허만 볼 경우 false)
+    ServiceKey: API_KEY,
+    numOfRows: 100,
+    pageNo: 1
+  }
+});
+
+
+위와 같이 **rightHoler**에 "세기 에프에스디(주)"와 같은 명칭이나 "123456789012"와 같은 특허고객번호를 넣으면 해당 현재 권리자 기준으로 특허를 검색하게 됩니다. (patent/utility 파라미터는 필요에 따라 설정하며, 명시하지 않으면 기본적으로 특허와 실용신안을 모두 검색합니다.)
+
+등록특허 필터링: getAdvancedSearch의 응답에서도 등록번호(registrationNumber 또는 registerNumber)가 있는 항목만 필터링합니다
+GitHub
+. 이는 기존 코드와 동일하게, registrationNumber 값이 '-' 등 빈 값이 아닌 경우만 걸러내는 방식입니다. 이로써 공개 상태에 머문 건이나 미등록건은 배제하고 등록특허만 남깁니다.
+
+상세정보 조회: 필터링된 각 특허에 대해 기존과 동일한 방식으로 2차 서지세부정보 조회를 수행합니다. 즉, basicPatent.applicationNumber를 이용해 getBibliographyDetailInfo API를 호출하고
+GitHub
+, 반환된 상세 정보(detailInfo)를 기존 기본 정보와 병합합니다. 이 부분의 로직 (Promise.all을 통한 병렬 조회 및 오류 처리 등)은 변경 전후 동일하게 유지됩니다.
+
+응답 구조: 최종적으로 customerNumber, applicantName, totalCount, patents 리스트로 구성된 JSON 객체를 반환하는 부분은 기존 구조를 그대로 따릅니다. 프론트엔드에서는 이전과 동일한 키를 사용하여 데이터를 렌더링할 수 있으므로 백워드 호환성이 유지됩니다. (applicantName 필드는 여전히 첫 번째 특허의 출원인명을 사용하며, 권리자 명칭과 다를 수 있지만 이는 기존 동작과 일치합니다.)
+
+새로운 API 파라미터 설정 예시 (getAdvancedSearch)
+
+rightHoler (등록권자): KIPRIS 고급검색에서 현재 특허권자를 지정하는 필드로, 특허권자의 이름 또는 특허고객번호를 넣을 수 있습니다. 예를 들어 권리자 명칭이 "세기 에프에스디(주)"인 경우:
+
+.../getAdvancedSearch?rightHoler=세기 에프에스디(주)&ServiceKey=인증키&numOfRows=100&pageNo=1
+
+
+또는 해당 기업의 특허고객번호가 123456789012라면:
+
+.../getAdvancedSearch?rightHoler=123456789012&ServiceKey=인증키&numOfRows=100&pageNo=1
+
+
+이렇게 호출하면 입력한 값이 현재 권리자인 모든 특허를 검색합니다. (참고로 특허고객번호는 KIPRIS에서 출원인과 권리자 식별에 모두 사용될 수 있는 ID입니다.)
+
+patent / utility: 필요에 따라 고급검색에서는 특허와 실용신안 여부를 필터링할 수 있습니다. patent=true, utility=false로 설정하면 특허만 검색하고 실용신안은 제외합니다. 별도 지정이 없으면 기본적으로 특허와 실용신안 모두 포함된 결과가 나올 수 있으므로, 등록특허만을 의도한다면 이 파라미터를 명시적으로 지정하는 것이 안전합니다.
+
+기타 파라미터: numOfRows와 pageNo는 각각 한 페이지당 결과 수(기본 30, 최대 500)와 페이지 번호를 의미하며, 기존처럼 페이지네이션 처리에 사용됩니다. ServiceKey는 인증 키로 기존과 동일합니다. 이 외에 sortSpec(정렬기준)이나 descSort(내림차순 여부) 파라미터를 통해 필요시 정렬 순서를 지정할 수 있지만, 본 요구사항에서는 기본값(통상적으로 최신순)으로 두어도 무방합니다.
+
+수정 후 처리 흐름
+
+고급 검색 호출: 사용자가 입력한 고객번호 또는 명칭을 받아 PatentService.searchRegisteredPatents()에서 KIPRIS의 고급검색 API (getAdvancedSearch)를 호출합니다. 이 때 검색 조건으로 rightHoler=<사용자입력>을 지정하여 해당 이름/번호가 현재 권리자인 특허 목록을 가져옵니다. 예를 들어 사용자가 "세기 에프에스디(주)"를 입력했다면, KIPRIS에서 현 권리자가 해당 회사로 등록된 특허들을 모두 조회합니다.
+
+등록특허 필터링: getAdvancedSearch 결과로 받은 특허 목록에서 등록번호가 존재하는 건만 필터링합니다. KIPRIS 응답의 각 항목에 registrationNumber(또는 registerNumber) 필드가 있으며, 여기에 실제 등록번호가 채워져 있는 경우만 대상이 됩니다
+GitHub
+. 이 작업을 통해 권리자는 맞지만 아직 등록이 안 된 출원건, 권리가 소멸된 건 등은 제외하고 유효한 등록특허만 다음 단계로 넘깁니다.
+
+상세 정보 병합: 필터링된 등록특허 목록에 대해 서지 상세정보 조회를 진행합니다. 각 특허의 출원번호(applicationNumber)를 사용하여 getBibliographyDetailInfo API를 호출하고 상세 정보를 얻어옵니다
+GitHub
+. 이를 통해 발명자, 청구항수, 등록일 등 추가 필드와 최신 정보(예: 권리 상태 변경사항 등)를 확보합니다. 그런 다음 기본 목록 정보와 상세 정보를 병합하여 하나의 특허 객체로 만듭니다. 상세정보 호출에 실패하거나 시간이 초과된 경우에는 해당 특허에 대해 기본 정보만 사용하고 계속 진행하며, 서비스 전체의 안정성을 높입니다. 이 과정은 Promise.all로 비동기 병렬 처리되어 성능을 유지합니다.
+
+결과 구성 및 반환: 모든 등록특허에 대한 상세 병합이 완료되면, 최종적으로 customerNumber (사용자 입력값), applicantName (등록특허 중 첫 번째 항목의 출원인명 또는 “정보 없음”), totalCount (등록특허 건수), patents (등록특허 상세 리스트) 필드를 갖는 JSON 객체를 생성합니다. 이 구조는 기존 프론트엔드에서 사용하던 형식과 동일하므로, 프론트엔드는 수정 없이도 새로운 로직의 응답을 그대로 활용할 수 있습니다. 응답 예시는 다음과 같습니다.
+{
+  "success": true,
+  "customerNumber": "123456789012",
+  "applicantName": "세기 에프에스디(주)",
+  "totalCount": 5,
+  "patents": [
+    {
+      "applicationNumber": "1020120001234",
+      "registrationNumber": "1020150005678",
+      "applicantName": "세기 에프에스디(주)",
+      "inventorName": "홍길동",
+      "applicationDate": "2012-01-10",
+      "registrationDate": "2015-06-22",
+      "expirationDate": "2032-01-10",
+      "inventionTitle": "예시 발명 명칭",
+      "claimCount": "10",
+      "publicationDate": "2013-07-15",
+      "registrationStatus": "등록",
+      "examStatus": "특허권 유지",
+      "ipcCode": "G06F…",
+      "abstract": "이 발명은 ...",
+      "...": "..."
+    },
+    { ... 나머지 특허 4건 ... }
+  ]
+}

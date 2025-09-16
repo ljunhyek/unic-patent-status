@@ -16,12 +16,6 @@ router.get('/registered', (req, res) => {
     });
 });
 
-// 등록특허 조회 (크롤링 기반)
-router.get('/patent-search', (req, res) => {
-    res.render('patent-search', {
-        title: '등록특허 조회'
-    });
-});
 
 // 출원특허 현황
 router.get('/application', (req, res) => {
@@ -30,17 +24,18 @@ router.get('/application', (req, res) => {
     });
 });
 
-// 연차료 조회
-router.get('/fee-search', (req, res) => {
-    res.render('fee-search', {
-        title: '연차료 조회'
-    });
-});
 
 // 감사 페이지 (연차료 납부의뢰 완료 후)
 router.get('/thanks', (req, res) => {
     res.render('thanks', {
         title: '신청 완료'
+    });
+});
+
+// 연차료 납부의뢰 감사 페이지
+router.get('/e_thanks', (req, res) => {
+    res.render('e_thanks', {
+        title: '납부의뢰 완료'
     });
 });
 

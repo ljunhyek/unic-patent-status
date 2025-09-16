@@ -31,7 +31,20 @@
       "mcp__sequential-thinking__sequentialthinking",
       "Bash(python:*)",
       "Bash(npx playwright install:*)",
-      "Bash(npx playwright:*)"
+      "Bash(npx playwright:*)",
+      "Bash(git stash:*)",
+      "Read(/C:\\ip\\unic-patent-status\\views/**)",
+      "Read(/C:\\ip\\unic-patent-status\\routes/**)",
+      "Read(/C:\\ip\\unic-patent-status\\routes/**)",
+      "Read(/C:\\ip\\unic-patent-status/**)",
+      "Read(/C:\\ip\\unic-patent-status\\services/**)",
+      "Read(/C:\\ip\\unic-patent-status\\services/**)",
+      "Read(/C:\\ip\\unic-patent-status\\services/**)",
+      "Read(/C:\\ip\\unic-patent-status\\services/**)",
+      "Bash(npm install:*)",
+      "Bash(move C:ipunic-patent-statusviewspatent-search.ejs C:ipunic-patent-statusarchivepatent-search-deprecated)",
+      "Bash(sed:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,245 @@
+# -*- coding: utf-8 -*-
+"""
+KIPRIS ▸ [상세검색] ▸ 인명정보 ▸ 최종권리자(TRH)
+고객번호로 검색 → 결과(searchResult.do)에서 '출원번호(일자)'만 수집
+
+설치:
+    pip install playwright
+    playwright install
+
+실행:
+    python kipris_final_owner_appnos.py --customer 120230740981
+    # 옵션 없이 실행하면 프롬프트로 고객번호를 받습니다.
+
+옵션:
+    --headful         : 브라우저 창 띄워서 실행
+    --max-pages N     : 최대 페이지 수 (기본 100)
+    --timeout MS      : 단계별 타임아웃(ms, 기본 20000)
+"""
+
+import asyncio
+import re
+import sys
+import argparse
+from typing import List, Set
+from pathlib import Path
+
+from playwright.async_api import async_playwright, Page, TimeoutError as PWTimeoutError
+
+KIPRIS_HOME = "https://www.kipris.or.kr/khome/main.do"
+RESULT_URL_RE = re.compile(r"/khome/search/searchResult\.do", re.I)
+APPNO_RE = re.compile(r"\b(1|2)\d{12}\b")  # 국내 출원번호(13자리, 10/20 시작)
+
+# -------- 유틸 --------
+async def try_click_many(page: Page, selectors: List[str], timeout: int = 2000) -> bool:
+    for sel in selectors:
+        try:
+            loc = page.locator(sel).first
+            if await loc.count():
+                try:
+                    await loc.scroll_into_view_if_needed()
+                except Exception:
+                    pass
+                try:
+                    await loc.click(timeout=timeout)
+                    return True
+                except Exception:
+                    # JS 클릭 폴백
+                    try:
+                        ok = await page.evaluate(
+                            """(selector) => {
+                                const el = document.querySelector(selector);
+                                if (!el) return false;
+                                el.scrollIntoView({block:'center', inline:'center'});
+                                el.click();
+                                return true;
+                            }""",
+                            sel,
+                        )
+                        if ok:
+                            return True
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+    return False
+
+def prompt_customer() -> str:
+    print("\n권리자 고객번호를 입력하세요 (예: 120230740981): ", end="", flush=True)
+    try:
+        s = input().strip()
+    except EOFError:
+        s = ""
+    return s
+
+# -------- 단계 --------
+async def open_detail_search(page: Page, timeout: int):
+    print("[1/6] 메인 접속…", flush=True)
+    await page.goto(KIPRIS_HOME, wait_until="domcontentloaded", timeout=timeout)
+
+    # 팝업/배너 닫기
+    for sel in ['button:has-text("닫기")', 'button.close', '[aria-label="Close"]']:
+        try:
+            if await page.locator(sel).count():
+                await page.locator(sel).first.click(timeout=800)
+        except Exception:
+            pass
+
+    print("[2/6] [상세검색] 진입 시도…", flush=True)
+    clicked = await try_click_many(page, [
+        "a:has-text('상세검색')",
+        "button:has-text('상세검색')",
+        "//a[contains(text(),'상세검색')]",
+        "//button[contains(text(),'상세검색')]",
+        "text=상세검색",
+    ], timeout=timeout)
+    if not clicked:
+        print("  - [상세검색] 버튼을 못 찾았지만, 상세영역이 기본 노출 레이아웃일 수 있습니다.", flush=True)
+
+    try:
+        await page.wait_for_load_state("networkidle", timeout=timeout)
+    except PWTimeoutError:
+        pass
+
+async def ensure_TRH_and_get_input(page: Page, timeout: int):
+    """
+    - select#sd01_g04_category_07 => value='TRH'로 강제 설정(+ 이벤트)
+    - 인접 입력칸(#sd01_g04_text_07 또는 input[data-field='TRH']) 반환
+    """
+    print("[3/6] 인명정보 ▸ 최종권리자(TRH) 설정…", flush=True)
+    # 인명정보 탭/버튼 (있으면)
+    await try_click_many(page, [
+        "button:has-text('인명정보')",
+        "a:has-text('인명정보')",
+        "//button[contains(text(),'인명정보')]",
+        "//a[contains(text(),'인명정보')]",
+    ], timeout=timeout)
+    try:
+        await page.wait_for_timeout(300)
+    except Exception:
+        pass
+
+    info = await page.evaluate("""
+    () => {
+      // 1) TRH 셀렉트 강제 설정
+      let sel = document.querySelector('#sd01_g04_category_07');
+      if (!sel) {
+        // 예비: TRH 옵션 가진 셀렉트 탐색
+        sel = Array.from(document.querySelectorAll('select')).find(s =>
+          Array.from(s.options||[]).some(o => (o.value||'')==='TRH' || /최종권리자/.test(o.textContent||''))
+        ) || null;
+      }
+      if (sel) {
+        const hasTRH = Array.from(sel.options||[]).some(o => (o.value||'')==='TRH');
+        if (hasTRH) {
+          sel.value = 'TRH';
+        } else {
+          const byText = Array.from(sel.options||[]).find(o => /최종권리자/.test(o.textContent||''));
+          if (byText) sel.value = byText.value;
+        }
+        sel.dispatchEvent(new Event('input', {bubbles:true}));
+        sel.dispatchEvent(new Event('change', {bubbles:true}));
+        try { sel.scrollIntoView({block:'center', inline:'center'}); } catch(e) {}
+      }
+
+      // 2) TRH 입력칸 찾기
+      //   우선권: data-field="TRH"
+      let inp = document.querySelector('input[data-field="TRH"]');
+      //   명시 id 후보
+      if (!inp) inp = document.querySelector('#sd01_g04_text_07');
+      //   같은 행 주변
+      if (!inp && sel) {
+        const row = sel.closest('.row, tr, .search-row, .cell, .grid, .columns, .f-group') || sel.parentElement;
+        if (row) inp = row.querySelector('input[type="text"]');
+      }
+      //   마지막: 전체 텍스트 input 중 placeholder/aria 힌트
+      if (!inp) {
+        inp = Array.from(document.querySelectorAll('input[type="text"]')).find(el => {
+          const ph = (el.getAttribute('placeholder')||'') + ' ' + (el.getAttribute('aria-label')||'');
+          return /고객번호|특허고객번호|TRH|최종권리자/.test(ph);
+        }) || null;
+      }
+      if (!inp) return { ok:false, reason:'no-input' };
+
+      const selStr = sel ? (sel.id ? '#'+sel.id : 'select') : null;
+      const inpStr = inp.id ? ('#'+inp.id) : (inp.getAttribute('data-field') ? `input[data-field="${inp.getAttribute('data-field')}"]` : 'input[type="text"]');
+
+      try { inp.scrollIntoView({block:'center', inline:'center'}); } catch(e) {}
+      return { ok:true, selectSelector: selStr, inputSelector: inpStr };
+    }
+    """)
+    if not info or not info.get("ok"):
+        raise RuntimeError(f"TRH 입력칸 탐색 실패: {info}")
+
+    inp_sel = info["inputSelector"]
+    return page.locator(inp_sel)
+
+async def submit_search(page: Page, trh_input, customer: str, timeout: int):
+    print(f"[4/6] 고객번호 입력: {customer}", flush=True)
+    await trh_input.fill(customer, timeout=timeout)
+    # 입력 이벤트(프레임워크 바인딩 대응)
+    await page.evaluate("""(sel, val) => {
+        const el = document.querySelector(sel);
+        if (!el) return;
+        el.value = val;
+        el.dispatchEvent(new Event('input', {bubbles:true}));
+        el.dispatchEvent(new Event('change', {bubbles:true}));
+        el.dispatchEvent(new Event('blur', {bubbles:true}));
+    }""", await trh_input.evaluate("el => el.matches('#sd01_g04_text_07, input[data-field=\"TRH\"]') ? (el.id ? '#'+el.id : 'input[data-field=\"TRH\"]') : null"), customer)
+
+    print("[5/6] 검색 실행…", flush=True)
+    # 1) 검색 버튼 시도
+    clicked = await try_click_many(page, [
+        "button:has-text('검색'):not(:has-text('상세'))",
+        "button.btn-search",
+        "input[type='submit'][value*='검색']",
+        "a:has-text('검색'):not(:has-text('상세'))",
+        "#searchBtn",
+        ".search-btn",
+    ], timeout=timeout)
+
+    # 2) 상세검색 함수 직접 호출
+    if not clicked:
+        try:
+            await page.evaluate("""() => {
+                if (window.fnSearchDetail && typeof fnSearchDetail.search === 'function') {
+                    fnSearchDetail.search();
+                    return true;
+                }
+                return false;
+            }""")
+        except Exception:
+            pass
+
+    # 3) 폼 직접 submit (action에 searchResult.do 포함)
+    #    ※ 일부 레이아웃은 버튼/함수 대신 form submit으로 이동
+    await page.evaluate("""
+    () => {
+      const forms = Array.from(document.querySelectorAll('form'));
+      const tgt = forms.find(f => (f.getAttribute('action')||'').includes('searchResult.do'));
+      if (tgt) {
+        try { tgt.submit(); } catch(e) {}
+      }
+    }
+    """)
+
+    # 4) 마지막 폴백: Enter
+    try:
+        await trh_input.press("Enter")
+    except Exception:
+        pass
+
+    # 결과 대기 (URL 이동 또는 내용 로딩)
+    try:
+        await page.wait_for_url(RESULT_URL_RE, timeout=timeout)
+    except PWTimeoutError:
+        try:
+            await page.wait_for_load_state("networkidle", timeout=timeout)
+        except PWTimeoutError:
+            pass
+
+async def extract_appnos_on_page(page: Page) -> List[str]:
+    texts: List[str] = []
+    # '출원번호(일자)' 라벨 근처
+    try:
+        labels = page.locator('em.tit[data-lang]()

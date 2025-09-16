@@ -1,300 +1,39 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?><response><header><requestMsgID></requestMsgID><responseTime>2025-09-07 10:49:59.4959</responseTime><responseMsgID></responseMsgID><successYN>Y</successYN><resultCode>00</resultCode><resultMsg>NORMAL SERVICE.</resultMsg></header><body><item><biblioSummaryInfoArray><biblioSummaryInfo><applicationDate>2017.02.28</applicationDate><applicationFlag>특허</applicationFlag><applicationNumber>20-2017-0000961</applicationNumber><claimCount>1</claimCount><examinerName>강동문</examinerName><finalDisposal>등록결정(취소환송후)</finalDisposal><inventionTitle>방화문용 틈새 막음장치</inventionTitle><inventionTitleEng>Auto seal for fire protection door</inventionTitleEng><openDate>2017.11.28</openDate><openNumber>20-2017-0004017</openNumber><originalApplicationDate>2017.02.28</originalApplicationDate><originalApplicationKind>국내출원/변경</originalApplicationKind><originalApplicationNumber>10-2017-0025865</originalApplicationNumber><originalExaminationRequestDate>2017.02.28</originalExaminationRequestDate><originalExaminationRequestFlag>Y</originalExaminationRequestFlag><publicationDate>2019.06.27</publicationDate><publicationNumber> </publicationNumber><registerDate>2019.06.21</registerDate><registerNumber>20-0489506-0000</registerNumber><registerStatus>등록</registerStatus><translationSubmitDate> </translationSubmitDate></biblioSummaryInfo></biblioSummaryInfoArray><ipcInfoArray><ipcInfo><ipcDate>(2006.01.01)</ipcDate><ipcNumber>E06B 5/16</ipcNumber></ipcInfo><ipcInfo><ipcDate>(2006.01.01)</ipcDate><ipcNumber>E06B 7/20</ipcNumber></ipcInfo><ipcInfo><ipcDate>(2006.01.01)</ipcDate><ipcNumber>E06B 5/12</ipcNumber></ipcInfo></ipcInfoArray><familyInfoArray><familyInfo><familyApplicationNumber>1020170025865</familyApplicationNumber></familyInfo></familyInfoArray><abstractInfoArray><abstractInfo><astrtCont> 본 고안은 실린더를 관통하는 커넥터를 이용하여 비틀림없이 신속한 상하운동이 가능한 방화문용 틈새 막음장치에 관한 것이다. 본 고안의 방화문용 틈새 막음 장치는 실린더와 상기 실린더를 통해 상하 운동하는 제 2 커넥터를 이용하여 흔들림이나 비틀림 없이 제 2 로드에 하강력을 제공할 수 있다. 또한, 본 고안은 복원력을 제공하는 스프링을 좌우 슬라이딩되는 제 1 로드에 삽입하지 않고 제 1로드 외부에 고정시킴에 따라 스프링에 의한 제 1 로드의 축 센터가 흔들리는 것을 방지할 수 있다. 본 고안은 조임너트와 누름핀을 이용하여 제 2 로드의 하강폭을 제어하기가 용이하다. </astrtCont></abstractInfo></abstractInfoArray><internationalInfoArray><internationalInfo><internationOpenDate> </internationOpenDate><internationOpenNumber> </internationOpenNumber><internationalApplicationDate> </internationalApplicationDate><internationalApplicationNumber> </internationalApplicationNumber></internationalInfo></internationalInfoArray><claimInfoArray><claimInfo><claim>1. 방화문 저면을 따라 고정되고, 하단이 통공된 하우징(10) ;상기 하우징 내측 상부에 위치하여 슬라이딩되는 제 1 로드(20) ;상기 하우징에 일단이 고정되고 상기 제 1 로드에 타단이 고정되어  상기 제 1로드에 복원력을 제공하는 탄성부(30) ;상기 제 1 로드 하부에 위치하여, 상하 운동하는 제 2 로드(40) ;상기 제 2로드 하부에 결합되어 방화문 닫힘시 하강하여 지면과의 틈을 차단하는 방화 가스켓(50) ;상기 제 1 로드의 일단에 고정되고, 방화문 닫힘시 문틀과의 접촉으로 자동으로 밀려들어가 상기 제 1 로드를 슬라이딩시키는 푸시부(60) ;상기 제 1 로드에 힌지 결합되어 제 1 로드의 슬라이딩에 따라 상하운동을 하는 제 1 커넥터(71), 상기 제 1 로드와 제 2 로드 사이에 고정되며 상하가 통공된 원통형 구조인 실린더(72), 상기 실린더를 관통하여 상단이 상기 제 1 커넥터(71)에 고정핀(73)으로 힌지결합되고 하단이 제 2 로드에 결합된 원기둥 형상의 제 2 커넥터(74)을 구비한 상하 구동부(70)를 포함하되, 상기 푸시부는 상기 제 1 로드의 일단에 고정된 조임 너트(61)와 누름핀(62)을 포함하여 상기 방화 가스켓의 상하 운동 폭을 조절하고,상기 상하 구동부(70)는 상기 제 1 로드와 제 2 로드 사이에 위치하여 상기 하우징에 고정된 고정바(75)를 구비하고, 상기 고정바(75)에는 소정간격으로 통공된 홀이 형성되고, 상기 홀에 상기 실린더(72)가 삽입 및 접합되고,상기 제 2 커넥터(74)는 상기 실린더의 상하 개구를 통해 수직으로 상하운동을 하고,  방화문 닫힘시 상기 푸시부와 제 1 로드가 내측으로 슬라이딩되면, 상기 제 1 커넥터(71)와 제 2 커넥터(74)에 가해진 하강력이 상기 실린더(72)를 통해 수직으로 상기 제 2 로드(40)에 전달되어 상기 방화가스켓을 하강시키는 것을 특징으로 하는 방화문용 틈새 막음 장치.</claim></claimInfo></claimInfoArray><applicantInfoArray><applicantInfo><address>경기도 성남시 분당구...</address><code>420160239028</code><country>대한민국</country><engName>KIM, Sungbae</engName><name>김성배</name></applicantInfo><applicantInfo><address>경기도 평택시 추담로 **-**, *...</address><code>420130330662</code><country>대한민국</country><engName>KIM SEON HYE</engName><name>김선혜</name></applicantInfo></applicantInfoArray><inventorInfoArray><inventorInfo><address>경기도 성남시 분당구...</address><code>420160239028</code><country>대한민국</country><engName>KIM, Sungbae</engName><name>김성배</name></inventorInfo><inventorInfo><address>경기도 평택시 추담로 **-**, *...</address><code>420130330662</code><country>대한민국</country><engName>KIM SEON HYE</engName><name>김선혜</name></inventorInfo></inventorInfoArray><agentInfoArray><agentInfo><address>인천광역시 서구 청라커낼로***번길 ** (청라동) 제*층 제***호(유니크특허법률사무소)</address><code>920090000421</code><country>대한민국</country><engName>Lee Jun Hyek</engName><name>이준혁</name></agentInfo></agentInfoArray><priorityInfoArray></priorityInfoArray><designatedStateInfoArray></designatedStateInfoArray><priorArtDocumentsInfoArray><priorArtDocumentsInfo><documentsNumber>JP2002309864 A</documentsNumber><examinerQuotationFlag>Y</examinerQuotationFlag></priorArtDocumentsInfo><priorArtDocumentsInfo><documentsNumber>KR100850317 B1</documentsNumber><examinerQuotationFlag>Y</examinerQuotationFlag></priorArtDocumentsInfo></priorArtDocumentsInfoArray><legalStatusInfoArray><legalStatusInfo><commonCodeName>수리 (Accepted) </commonCodeName><documentEngName>[Converted Application] Application for Utility Model Registration</documentEngName><documentName>[변경출원]실용신안등록출원서</documentName><receiptDate>2017.02.28</receiptDate><receiptNumber>1-1-2017-0202006-46</receiptNumber></legalStatusInfo><legalStatusInfo><commonCodeName>수리 (Accepted) </commonCodeName><documentEngName>[Amendment to Application, etc.] Amendment</documentEngName><documentName>[출원서등 보정]보정서</documentName><receiptDate>2017.03.20</receiptDate><receiptNumber>1-1-2017-0271453-37</receiptNumber></legalStatusInfo><legalStatusInfo><commonCodeName>발송처리완료 (Completion of Transmission) </commonCodeName><documentEngName>Request for Amendment</documentEngName><documentName>보정요구서</documentName><receiptDate>2017.03.27</receiptDate><receiptNumber>1-5-2017-0041900-55</receiptNumber></legalStatusInfo><legalStatusInfo><commonCodeName>수리 (Accepted) </commonCodeName><documentEngName>[Amendment to Application, etc.] Amendment</documentEngName><documentName>[출원서등 보정]보정서</documentName><receiptDate>2017.03.30</receiptDate><receiptNumber>1-1-2017-0312415-19</receiptNumber></legalStatusInfo><legalStatusInfo><commonCodeName>수리 (Accepted) </commonCodeName><documentEngName>[Accelerated Examination] Request for Accelerated Examination</documentEngName><documentName>[우선심사신청]심사청구(우선심사신청)서</documentName><receiptDate>2017.05.26</receiptDate><receiptNumber>1-1-2017-0503458-96</receiptNumber></legalStatusInfo><legalStatusInfo><commonCodeName>수리 (Accepted) </commonCodeName><documentEngName>Submission of Document Related to Request for Accelerated Examination</documentEngName><documentName>우선심사신청관련 서류제출서</documentName><receiptDate>2017.06.07</receiptDate><receiptNumber>1-1-2017-0538824-13</receiptNumber></legalStatusInfo><legalStatusInfo><commonCodeName>발송처리완료 (Completion of Transmission) </commonCodeName><documentEngName>Notification of reason for refusal</documentEngName><documentName>의견제출통지서</documentName><receiptDate>2017.07.28</receiptDate><receiptNumber>9-5-2017-0528186-48</receiptNumber></legalStatusInfo><legalStatusInfo><commonCodeName>수리 (Accepted) </commonCodeName><documentEngName>[Opinion according to the Notification of Reasons for Refusal] Written Opinion(Written Reply, Written Substantiation)</documentEngName><documentName>[거절이유 등 통지에 따른 의견]의견(답변, 소명)서</documentName><receiptDate>2017.09.28</receiptDate><receiptNumber>1-1-2017-0950863-36</receiptNumber></legalStatusInfo><legalStatusInfo><commonCodeName>보정승인간주 (Regarded as an acceptance of amendment) </commonCodeName><documentEngName>[Amendment to Description, etc.] Amendment</documentEngName><documentName>[명세서등 보정]보정서</documentName><receiptDate>2017.09.28</receiptDate><receiptNumber>1-1-2017-0950847-16</receiptNumber></legalStatusInfo><legalStatusInfo><commonCodeName>수리 (Accepted) </commonCodeName><documentEngName>[Opinion according to the Notification of Reasons for Refusal] Written Opinion(Written Reply, Written Substantiation)</documentEngName><documentName>[거절이유 등 통지에 따른 의견]의견(답변, 소명)서</documentName><receiptDate>2017.09.29</receiptDate><receiptNumber>1-1-2017-0956240-42</receiptNumber></legalStatusInfo><legalStatusInfo><commonCodeName>발송처리완료 (Completion of Transmission) </commonCodeName><documentEngName>Decision to Refuse a Patent</documentEngName><documentName>거절결정서</documentName><receiptDate>2017.12.28</receiptDate><receiptNumber>9-5-2017-0909236-14</receiptNumber></legalStatusInfo><legalStatusInfo><commonCodeName>수리 (Accepted) </commonCodeName><documentEngName>Request for Opinion of Examiner</documentEngName><documentName>심사관의견요청서</documentName><receiptDate>2018.03.14</receiptDate><receiptNumber>7-8-2018-0005978-16</receiptNumber></legalStatusInfo><legalStatusInfo><commonCodeName>발송처리완료 (Completion of Transmission) </commonCodeName><documentEngName>Decision to grant</documentEngName><documentName>등록결정서</documentName><receiptDate>2019.06.10</receiptDate><receiptNumber>9-5-2019-0410287-42</receiptNumber></legalStatusInfo></legalStatusInfoArray><imagePathInfo><docName>2020170000961.jpg</docName><largePath>http://plus.kipris.or.kr/kiprisplusws/fileToss.jsp?arg=2ba38663aa11ff0f6ca91af6061a2e008775bba9bba1be29f0ba40e659cb1945ecf23e9328d9b4ce58fded73fd1c5064bfce2a69565fc406750f7440abe12afb93609d95039f183c</largePath><path>http://plus.kipris.or.kr/kiprisplusws/fileToss.jsp?arg=ed43a0609e94d6e22d01c5c32ba711cfa12cd480d0e8230144a07f8c62a02d1d051bb76ee3045add1f27dac85813e528972d02d34abcdaa6b06bca58da19445d780cb4ea99aef311</path></imagePathInfo><rndInfoArray></rndInfoArray></item></body><count><numOfRows>1</numOfRows><pageNo>1</pageNo><totalCount>1</totalCount></count></response>
+C:\ip\unic-patent-status>npm run dev
 
+> unic-patent-status@1.0.1 dev
+> nodemon server.local.js
 
-키프리스 홍보영상
-메인 데이터 목록 서비스 유형별 API
-특허·실용 공개·등록공보
+[nodemon] 3.1.10
+[nodemon] to restart at any time, enter `rs`
+[nodemon] watching path(s): *.*
+[nodemon] watching extensions: js,mjs,cjs,json
+[nodemon] starting `node server.local.js`
+node:internal/modules/cjs/loader:1404
+  throw err;
+  ^
 
-1. 개요
-한국 특허 / 실용신안 공개 및 등록공보의 서지정보, 대표도, 전문정보 등을 API(REST방식)으로 제공합니다.
+Error: Cannot find module '../../services/patentService'
+Require stack:
+- C:\ip\unic-patent-status\api\get-patent-details-bulk.js
+- C:\ip\unic-patent-status\routes\api.js
+- C:\ip\unic-patent-status\server.local.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1401:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1057:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1062:22)
+    at Function._load (node:internal/modules/cjs/loader:1211:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1487:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (C:\ip\unic-patent-status\api\get-patent-details-bulk.js:2:23)
+    at Module._compile (node:internal/modules/cjs/loader:1730:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\ip\\unic-patent-status\\api\\get-patent-details-bulk.js',
+    'C:\\ip\\unic-patent-status\\routes\\api.js',
+    'C:\\ip\\unic-patent-status\\server.local.js'
+  ]
+}
 
-2. 세부 정보 내용
-[API 서비스]
-① 검색 : 일반검색 및 항목별검색 기능을 통해 특허·실용신안 공보 정보를 XML 형태로 제공합니다.
-② 서지정보 : 출원번호, 등록일자, 발명의 명칭, 등록상태 등의 정보를 XML 형태로 제공합니다.
-③ 도면/전문 : 공개 및 공고 전문, 대표도면의 다운로드 경로를 XML 형태로 제공합니다.
-메타정보
-
-메타정보
-분류체계	국내 IP데이터 > 공보 > 특허·실용
-제공기관	특허청	업데이트 주기	일 단위
-데이터 설명 등록일자	2014-10-20	데이터 설명 갱신일자	2020-10-27
-태그	등록공보,공보,특허,실용신안,공개공보,실용,특허실용 공개등록공보,공개공보
-서비스 유형
-
-REST신청하기
-일반검색항목별검색서지정보도면/전문부가기능
-1. 서지상세정보(공공데이터 포털 연계)2. 서지요약정보3. IPC정보4. CPC정보5. 국가연구개발사업정보6. 출원인정보7. 발명자정보8. 패밀리정보9. 초록10. 국제출원정보11. 청구항12. 대리인13. 우선권정보14. 지정국15. 선행기술조사문헌16. 행정처리17. 패밀리출원정보
-오퍼레이션 명 (Operation Name)
-
-서지상세정보(공공데이터 포털 연계) - getBibliographyDetailInfoSearch
-
-요청 주소 (Request URL)
-
-1
-GROUP
-item
-2
-GROUP
-  biblioSummaryInfoArray
-3
-GROUP
-    biblioSummaryInfo
-4
-DATA
-      applicationDate
-출원일자
-4
-DATA
-      applicationNumber
-출원번호
-4
-DATA
-      applicationFlag
-출원구분
-4
-DATA
-      claimCount
-청구항수
-4
-DATA
-      examinerName
-심사관명
-4
-DATA
-      finalDisposal
-최종처분내용
-4
-DATA
-      inventionTitle
-발명의명칭
-한글
-4
-DATA
-      inventionTitleEng
-발명의명칭
-영문
-4
-DATA
-      openDate
-공개일자
-4
-DATA
-      openNumber
-공개번호
-4
-DATA
-      originalApplicationDate
-원출원출원일자
-(신규, 국제출원, null)
-4
-DATA
-      originalApplicationKind
-원출원종류
-4
-DATA
-      originalApplicationNumber
-원출원출원번호
-4
-DATA
-      originalExaminationRequestDate
-심사청구일자
-4
-DATA
-      originalExaminationRequestFlag
-심사청구여부
-4
-DATA
-      publicationDate
-공고일자
-4
-DATA
-      publicationNumber
-공고번호
-4
-DATA
-      registerDate
-등록일자
-4
-DATA
-      registerNumber
-등록번호
-4
-DATA
-      registerStatus
-등록상태
-4
-DATA
-      translationSubmitDate
-번역문제출일자
-2
-GROUP
-  ipcInfoArray
-3
-GROUP
-    ipcInfo
-4
-DATA
-      ipcDate
-IPC개정일자
-4
-DATA
-      ipcNumber
-IPC코드
-2
-GROUP
-  familyInfoArray
-3
-GROUP
-    familyInfo
-4
-DATA
-      familyApplicationNumber
-패밀리출원번호
-2
-GROUP
-  abstractInfoArray
-3
-GROUP
-    abstractInfo
-4
-DATA
-      astrtCont
-초록
-2
-GROUP
-  internationalInfoArray
-3
-GROUP
-    internationalInfo
-4
-DATA
-      internationOpenDate
-국제공개일자
-4
-DATA
-      internationOpenNumber
-국제공개번호
-4
-DATA
-      internationalApplicationDate
-국제출원일자
-4
-DATA
-      internationalApplicationNumber
-국제출원번호
-2
-GROUP
-  claimInfoArray
-3
-GROUP
-    claimInfo
-4
-DATA
-      claim
-청구항
-2
-GROUP
-  applicantInfoArray
-3
-GROUP
-    applicantInfo
-4
-DATA
-      address
-출원인주소
-4
-DATA
-      code
-특허고객번호
-특허고객번호
-4
-DATA
-      country
-출원인국가
-4
-DATA
-      engName
-출원인명
-영문
-4
-DATA
-      name
-출원인명
-한글
-2
-GROUP
-  inventorInfoArray
-3
-GROUP
-    inventorInfo
-4
-DATA
-      address
-발명자주소
-4
-DATA
-      code
-특허고객번호(발명자번호)
-특허고객번호(발명자번호)
-4
-DATA
-      country
-발명자국가
-4
-DATA
-      engName
-발명자명
-영문
-4
-DATA
-      name
-발명자명
-한글
-2
-GROUP
-  agentInfoArray
-3
-GROUP
-    agentInfo
-4
-DATA
-      address
-대리인주소
-4
-DATA
-      code
-대리인번호
-대리인번호
-4
-DATA
-      country
-대리인국가
-4
-DATA
-      engName
-대리인명
-영문
-4
-DATA
-      name
-대리인명
-한글
-2
-GROUP
-  priorityInfoArray
-3
-GROUP
-    priorityInfo
-4
-DATA
-      priorityApplicationCountry
-우선권주장국가
-4
-DATA
-      priorityApplicationNumber
-우선권주장번호
-4
-DATA
-      priorityApplicationDate
-우선권주장일자
+Node.js v22.17.1
+[nodemon] app crashed - waiting for file changes before starting...

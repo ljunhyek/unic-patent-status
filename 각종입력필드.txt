@@ -18,4 +18,12 @@ ServiceKey=3Mc0FYs/RDD7M4buAiSD8oaxme74hLKKGZ0T0jjvePY=
 
 
 
+노션 수퍼클로드 명령어 https://principled-learning-2c9.notion.site/238dc93a597c806c8fe2d77d6bb14238
 
+YZ4DBB9U44GZNNY22QEQTFM93BEGTZ : 인증앱
+
+
+1. KIPRIS_API_BASE_URL http://plus.kipris.or.kr/kipo-api/kipi
+2.ALLOWED_ORIGINS https://new-patent.vercel.app/
+3. NODE_ENV production
+4. KIPRIS_API_KEY 3Mc0FYs/RDD7M4buAiSD8oaxme74hLKKGZ0T0jjvePY=

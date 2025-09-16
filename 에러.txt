@@ -1,0 +1,67 @@
+
+C:\ip\unic-patent-status>npm run dev
+
+> unic-patent-status@1.0.1 dev
+> nodemon server.local.js
+
+[nodemon] 3.1.10
+[nodemon] to restart at any time, enter `rs`
+[nodemon] watching path(s): *.*
+[nodemon] watching extensions: js,mjs,cjs,json
+[nodemon] starting `node server.local.js`
+
+        ╔════════════════════════════════════════╗
+        ║   유니크 특허 현황 조회 시스템          ║
+        ╠════════════════════════════════════════╣
+        ║   환경: development                  ║
+        ║   서버: http://localhost:3001          ║
+        ║   시간: 2025. 9. 11. 오후 4:05:05      ║
+        ╚════════════════════════════════════════╝
+
+GET / 200 26.924 ms - 43751
+GET /css/style.css 304 7.196 ms - -
+GET /css/annual-fee-status.css 304 8.736 ms - -
+GET /js/main.js 304 9.709 ms - -
+GET /js/registered.js?v=2025.08.21.v3 304 9.057 ms - -
+🔍 크롤링 기반 등록특허 검색 API 호출: { customerNumber: '120230740981' }
+🔢 정리된 고객번호: 120230740981
+🚀 크롤링 기반 특허 검색 시작
+🎭 Node.js Playwright 크롤링 시작: 120230740981
+🔄 크롤링 함수 직접 호출: 120230740981
+🔍 크롤링 API 호출: { customerNumber: '120230740981' }
+🎭 Playwright 크롤링 시작
+🎭 KIPRIS 크롤링 시작 - 고객번호: 120230740981
+📱 Playwright Chromium 브라우저 실행 중...
+✅ 브라우저 실행 성공
+✅ 새 페이지 생성 성공
+🌐 KIPRIS 홈페이지 접속 중...
+✅ KIPRIS 홈페이지 접속 성공
+🔍 검색어 준비: TRH=[120230740981]
+📝 검색 입력란 찾는 중...
+✅ 검색 입력란 발견
+✅ 검색어 입력 완료
+🚀 검색 실행 중...
+✅ Enter 키 입력 완료
+⏳ 검색 결과 로딩 대기 중...
+✅ 검색 결과 페이지 로딩 완료
+📋 서지정보 보기 모드 설정 중...
+    ✅ 서지정보 보기 모드 활성화
+📄 특허 정보 추출 중...
+    총 5개의 결과 발견
+    ✅ 기본정보 추출 완료: 5건
+    [1] 상세정보 크롤링: 방화문용 틈새 막음 장치(Auto seal for fire protection door)
+    ⚠️ 청구범위 항수 요소를 찾을 수 없음
+    [1] 방화문용 틈새 막음 장치(Auto seal for fire protection door) - 1020160042595 (청구항수: N/A)
+    [2] 상세정보 크롤링: 90° 및 180° 개폐가능한 매립형 방화문(Buried swing type fire door capable of Opening and Shutting with 90°and 180°)
+    ⚠️ 상세정보 크롤링 실패: locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator('article.result-item').nth(1).locator('h1.title button').first()
+
+    [2] 90° 및 180° 개폐가능한 매립형 방화문(Buried swing type fire door capable of Opening and Shutting with 90°and 180°) - 1020200031264 (청구항수: N/A)
+    [3] 상세정보 크롤링: 차열 보강프레임 이를 구비하는 내화 구조체(Fireproof reinforce frame and Fireproof structure with fireproof reinforce frame)
+    ⚠️ 상세정보 크롤링 실패: locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator('article.result-item').nth(2).locator('h1.title button').first()
+
+    [3] 차열 보강프레임 이를 구비하는 내화 구조체(Fireproof reinforce frame and Fireproof structure with fireproof reinforce frame) - 1020240190646 (청구항수: N/A)
+    [4] 상세정보 크롤링: 축 일체형 중량문 경첩(Hinge with integral Axis for Heavy Door)

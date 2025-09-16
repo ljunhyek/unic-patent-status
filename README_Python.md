@@ -1,6 +1,18 @@
 # 파이썬 특허 연차료 계산 시스템
 
-고객번호를 입력받아 KIPRIS API를 통해 등록특허 정보를 조회하고 연차료를 계산하는 파이썬 애플리케이션입니다.
+⚠️ **더 이상 사용되지 않음**: 이 Python 시스템은 KIPRIS API 기반에서 Node.js 크롤링 기반 시스템으로 대체되었습니다.
+
+**새로운 시스템 사용 방법:**
+```bash
+npm install
+npm start
+```
+
+---
+
+**아래는 참고용으로 보관된 이전 시스템 문서입니다.**
+
+~~고객번호를 입력받아 KIPRIS API를 통해 등록특허 정보를 조회하고 연차료를 계산하는 파이썬 애플리케이션입니다.~~
 
 ## 🚀 기능
 
@@ -45,12 +57,8 @@ pip install -r requirements.txt
 - `python-dotenv`: 환경변수 관리
 
 ### 3. 환경변수 설정
-`.env` 파일을 생성하고 KIPRIS API 정보를 설정:
-
-```env
-KIPRIS_API_KEY=your_api_key_here
-KIPRIS_API_BASE_URL=http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice
-```
+`.env` 파일 설정은 더 이상 필요하지 않습니다.
+이 시스템은 Node.js 기반 크롤링 시스템으로 전환되었습니다.
 
 ## 🎯 사용법
 

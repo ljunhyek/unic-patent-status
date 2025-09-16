@@ -39,7 +39,7 @@
                         <span class="info-value" id="resultCustomerNumber">-</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">출원인:</span>
+                        <span class="info-label">최종권리자:</span>
                         <span class="info-value" id="resultApplicantName">-</span>
                     </div>
                     <div class="info-item">
@@ -147,9 +147,9 @@ document.getElementById('searchForm').addEventListener('submit', async function(
 function displayResults(data) {
     currentPatents = data.patents || [];
     currentPage = 1; // 검색 시 첫 페이지로 초기화
-    
+
     document.getElementById('resultCustomerNumber').textContent = data.customerNumber;
-    document.getElementById('resultApplicantName').textContent = data.applicantName;
+    document.getElementById('resultApplicantName').textContent = data.finalRightsHolder || data.applicantName || '-';
     document.getElementById('resultTotalCount').textContent = data.totalCount;
     
     const resultsSection = document.getElementById('resultsSection');
@@ -164,6 +164,23 @@ function displayResults(data) {
     }
     
     resultsSection.style.display = 'block';
+}
+
+// 날짜 포맷팅 함수
+function formatDate(dateStr) {
+    if (!dateStr || dateStr === '-') return '-';
+
+    // 이미 YYYY-MM-DD 형식이면 그대로 반환
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        return dateStr;
+    }
+
+    // YYYYMMDD 형식을 YYYY-MM-DD로 변환
+    if (/^\d{8}$/.test(dateStr)) {
+        return dateStr.slice(0, 4) + '-' + dateStr.slice(4, 6) + '-' + dateStr.slice(6, 8);
+    }
+
+    return dateStr;
 }
 
 // 페이지네이션된 결과 표시
@@ -183,28 +200,28 @@ function displayPaginatedResults() {
     
     paginatedPatents.forEach((patent, index) => {
         const row = document.createElement('tr');
-        
+
         // 안전한 문자열 처리
-        const safeValue = (value) => value && value !== '-' ? value : '-';
-        
+        const safeValue = (value) => value && value !== '-' && value !== '' ? value : '-';
+
         const applicantName = safeValue(patent.applicantName);
         const inventionTitle = safeValue(patent.inventionTitle);
-        
+
         row.innerHTML = `
             <td class="patent-number">${safeValue(patent.applicationNumber)}</td>
             <td class="patent-number">${safeValue(patent.registrationNumber)}</td>
             <td class="applicant-name-clean applicant-name">${applicantName}</td>
             <td>${safeValue(patent.inventorName)}</td>
-            <td>${formatDate(patent.applicationDate)}</td>
-            <td>${safeValue(patent.priorityNumber)}</td>
-            <td>${formatDate(patent.pctDeadline) || '-'}</td>
+            <td>${formatDate(patent.applicationDate) || '-'}</td>
+            <td>-</td>
+            <td>-</td>
             <td class="invention-title-natural invention-title">${inventionTitle}</td>
-            <td>${safeValue(patent.opinionNotice)}</td>
-            <td>${safeValue(patent.currentStatus) || '심사중'}</td>
-            <td>${createFileLink(patent.publicationFullText, patent.publicationDocName, '공개전문')}</td>
-            <td>${createFileLink(patent.announcementFullText, patent.announcementDocName, '공고전문')}</td>
-            <td>${safeValue(patent.pctApplicationNumber)}</td>
-            <td>${safeValue(patent.familyPatentNumber)}</td>
+            <td>-</td>
+            <td>${safeValue(patent.examStatus) || '-'}</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
         `;
         tableBody.appendChild(row);
     });

@@ -1,0 +1,161 @@
+<div id="caseNumberDiv" class="search_box" style="display: block;">
+    <fieldset>
+        <legend>검색조건</legend>
+        <ul>
+            <li>
+                <label for="selectNum2">사건번호</label>
+                <div class="area_select mr10">
+                    <select name="selectNum2" id="selectNum2" onchange="fnCaseNumberClick(this.value);" class="form_ctrl">
+                        <option value="appl" selected="selected">출원번호</option>
+                        <option value="rgst">등록번호</option>
+                        <!-- <option value="trial">심판번호</option> -->
+                        <option value="intnlAppl">국제출원번호</option>
+                        <option value="demr">이의신청번호</option>
+                        <option value="techExDmnd">기술평가청구번호</option>
+                        <option value="mdappl">마드리드특허청참조번호</option>
+                        <option value="mdrgst">마드리드국제등록번호</option>
+                        <option value="hgref">헤이그특허청참조번호</option>
+                        <option value="hgrgst">헤이그국제등록번호</option>
+                        <option value="rcpt">접수/발송번호</option>
+                    </select>
+                </div>
+                <!-- 출원번호 -->
+                <div id="caseNumberChoiceDiv1" class="" style="display: none;">
+                    <input type="text" id="txtApplNo01" name="txtApplNo01" title="출원번호 첫번째" size="4" maxlength="2" inputmode="numeric" class="form_ctrl"> -
+                    <input type="text" id="txtApplNo02" name="txtApplNo02" title="출원번호 두번째" size="6" maxlength="4" inputmode="numeric" class="form_ctrl"> -
+                    <input type="text" id="txtApplNo03" name="txtApplNo03" title="출원번호 세번째" size="9" maxlength="7" inputmode="numeric" class="form_ctrl">
+                </div>
+                <!-- 등록번호 -->
+                <div id="caseNumberChoiceDiv2" class="" style="display: block;">
+                    <select id="txtRgstNo01" name="txtRgstNo01" title="등록번호 첫번째" class="form_ctrl">
+                        <option value="10" selected="selected">특허(10) </option>
+                        <option value="20">실용신안(20)</option>
+                        <option value="30">디자인(30)</option>
+                        <option value="40">상표(40)</option>
+                        <option value="41">서비스표(41)</option>
+                        <option value="42">업무표장(42)</option>
+                        <option value="43">단체표장(43)</option>
+                        <option value="44">지리적단체표장(44)</option>
+                        <option value="45">상표서비스표(45)</option>
+                    </select> -
+                    <input type="text" id="txtRgstNo02" name="txtRgstNo02" title="등록번호 두번째" size="9" maxlength="7" inputmode="numeric" class="form_ctrl"> -
+                    <input type="text" id="txtRgstNo03" name="txtRgstNo03" title="등록번호 세번째" size="4" maxlength="2" inputmode="numeric" class="form_ctrl"> -
+                    <input type="text" id="txtRgstNo04" name="txtRgstNo04" title="등록번호 네번째" size="4" maxlength="2" inputmode="numeric" class="form_ctrl">
+                </div>
+                <!-- 심판번호 -->
+                <!-- <div id="caseNumberChoiceDiv3" class="">
+                    <input type="text" id="txtTrlNo01" name="txtTrlNo01" size="6" title="심판(취소신청)번호 첫번째" maxlength="4" inputmode="numeric" class="form_ctrl"> -
+                    <select id="txtTrlNo02" name="txtTrlNo02" title="심판(취소신청)번호 두번째" class="form_ctrl">-->
+                        <!-- //GKIPONET_DEV_성호승 2016-11-21 : '소'코드 추가 -->
+                        <!--<option value="100" selected="selected" >당(100) </option>
+                        <option value="101">원(101)</option>
+                        <option value="102">보(102)</option>
+                        <option value="103">취(103)</option>
+                        <option value="104">기(104)</option>
+                        <option value="105">정(105)</option>
+                        <option value="106">소(106)</option>
+                        <option value="110">재당(110)</option>
+                        <option value="111">재원(111)</option>
+                        <option value="112">재보(112)</option>
+                        <option value="113">재취(113)</option>
+                        <option value="114">재기(114)</option>
+                        <option value="115">재정(115)</option>
+                        <option value="116">재소(116)</option>
+                        <option value="120">추당(120)</option>
+                        <option value="121">추원(121)</option>
+                        <option value="122">추보(122)</option>
+                        <option value="123">추취(123)</option>
+                        <option value="124">추기(124)</option>
+                        <option value="125">추정(125)</option>
+                        <option value="126">추소(126)</option>
+                        <option value="130">당(취소판결)(130)</option>
+                        <option value="131">원(취소판결)(131)</option>
+                        <option value="132">보(취소판결)(132)</option>
+                        <option value="133">취(취소판결)(133)</option>
+                        <option value="134">기(취소판결)(134)</option>
+                        <option value="135">정(취소판결)(135)</option>
+                        <option value="136">소(취소판결)(136)</option>
+                        <option value="140">당(환송)(140)</option>
+                        <option value="141">원(환송)(141)</option>
+                        <option value="142">보(환송)(142)</option>
+                        <option value="143">취(환송)(143)</option>
+                        <option value="144">기(환송)(144)</option>
+                        <option value="145">정(환송)(145)</option>
+                        <option value="146">소(환송)(146)</option>
+                        <option value="150">당(제척)(150)</option>
+                        <option value="151">원(제척)(151)</option>
+                        <option value="152">보(제척)(152)</option>
+                        <option value="153">취(제척)(153)</option>
+                        <option value="154">기(제척)(154)</option>
+                        <option value="155">정(제척)(155)</option>
+                        <option value="156">소(제척)(156)</option>
+                        <option value="160">당(기피)(160)</option>
+                        <option value="161">원(기피)(161)</option>
+                        <option value="162">보(기피)(162)</option>
+                        <option value="163">취(기피)(163)</option>
+                        <option value="164">기(기피)(164)</option>
+                        <option value="165">정(기피)(165)</option>
+                        <option value="166">소(기피)(166)</option>
+                        <option value="200">항당(200)</option>
+                        <option value="201">항원(201)</option>
+                    </select> -
+                    <input type="text" id="txtTrlNo03" name="txtTrlNo03" size="8" title="심판(취소신청)번호 세번째" maxlength="6" inputmode="numeric" class="form_ctrl"> 관련인
+                    <input type="text" id="txtTrlNo04" name="txtTrlNo04" size="8" title="심판관련인명" class="form_ctrl">
+                </div> -->
+                <!-- 국제출원번호 -->
+                <div id="caseNumberChoiceDiv4" class="" style="display: none;">
+                    <input type="hidden" id="txtIntnlApplNo01" name="txtIntnlApplNo01" size="4" title="국제출원번호 첫번째" value="PCT" inputmode="numeric" class="form_ctrl">PCT /
+                    <input type="text" id="txtIntnlApplNo02" name="txtIntnlApplNo02" size="4" title="국제출원번호 세번째" maxlength="2" inputmode="numeric" class="form_ctrl">
+                    <input type="text" id="txtIntnlApplNo03" name="txtIntnlApplNo03" size="6" title="국제출원번호 네번째" maxlength="4" inputmode="numeric" class="form_ctrl"> /
+                    <input type="text" id="txtIntnlApplNo04" name="txtIntnlApplNo04" size="8" title="국제출원번호 네번째" maxlength="6" inputmode="numeric" class="form_ctrl">
+                </div>
+                <!-- 마드리드특허청참조번호 -->
+                <div id="caseNumberChoiceDiv5" class="" style="display: none;">
+                    KR -
+                    <input type="text" id="txtMdApplNo01" name="txtMdApplNo01" size="6" title="마드리드특허청참조번호 첫번째" maxlength="4" inputmode="numeric" class="form_ctrl"> -
+                    <input type="text" id="txtMdApplNo02" name="txtMdApplNo02" size="9" title="마드리드특허청참조번호 두번째" maxlength="7" inputmode="numeric" class="form_ctrl">
+                </div>
+                <!-- 마드리드국제등록번호 -->
+                <div id="caseNumberChoiceDiv6" class="" style="display: none;">
+                    <input type="text" id="txtMdRgstNo01" name="txtMdRgstNo01" size="15" title="국제등록번호 첫번째" maxlength="13" inputmode="numeric" class="form_ctrl">
+                </div>
+                <!-- 헤이그국제등록번호 -->
+                <div id="caseNumberChoiceDiv7" class="" style="display: none;">
+                    DM /
+                    <input type="text" id="txtHgRgstNo01" name="txtHgRgstNo01" size="8" maxlength="6" inputmode="numeric" class="form_ctrl">
+                </div>
+                <!-- 접수/발송번호 -->
+                <div id="caseNumberChoiceDiv8" class="" style="display: none;">
+                    <input type="text" id="txtRcptNo01" name="txtRcptNo01" size="3" maxlength="1" title="접수발송번호 첫번째" inputmode="numeric" class="form_ctrl"> -
+                    <input type="text" id="txtRcptNo02" name="txtRcptNo02" size="3" maxlength="1" title="접수발송번호 두번째" inputmode="numeric" class="form_ctrl"> -
+                    <input type="text" id="txtRcptNo03" name="txtRcptNo03" size="6" maxlength="4" title="접수발송번호 세번째" inputmode="numeric" class="form_ctrl"> -
+                    <input type="text" id="txtRcptNo04" name="txtRcptNo04" size="9" maxlength="7" title="접수발송번호 네번째" inputmode="numeric" class="form_ctrl"> -
+                    <input type="text" id="txtRcptNo05" name="txtRcptNo05" size="4" maxlength="2" title="접수발송번호 다섯번째" inputmode="numeric" class="form_ctrl">
+                </div>
+                <!-- 이의신청번호 -->
+                <div id="caseNumberChoiceDiv9" class="" style="display: none;">
+                    <input type="text" id="txtDemrNo01" name="txtDemrNo01" title="이의신청번호 첫번째" size="4" maxlength="2" inputmode="numeric" class="form_ctrl"> -
+                    <input type="text" id="txtDemrNo02" name="txtDemrNo02" title="이의신청번호 두번째" size="6" maxlength="4" inputmode="numeric" class="form_ctrl"> -
+                    <input type="text" id="txtDemrNo03" name="txtDemrNo03" title="이의신청번호 세번째" size="8" maxlength="6" inputmode="numeric" class="form_ctrl">
+                </div>
+                <!-- 기술평가번호 -->
+                <div id="caseNumberChoiceDiv10" class="" style="display: none;">
+                    <input type="text" id="txtTechExDmndNo01" name="txtTechExDmndNo01" title="기술평가번호 첫번째" size="4" maxlength="2" inputmode="numeric" class="form_ctrl"> -
+                    <input type="text" id="txtTechExDmndNo02" name="txtTechExDmndNo02" title="기술평가번호 두번째" size="6" maxlength="4" inputmode="numeric" class="form_ctrl"> -
+                    <input type="text" id="txtTechExDmndNo03" name="txtTechExDmndNo03" title="기술평가번호 세번째" size="9" maxlength="7" inputmode="numeric" class="form_ctrl">
+                </div>
+                <!-- 헤이그특허청참조번호 -->
+                <div id="caseNumberChoiceDiv11" class="" style="display: none;">
+                	KR -
+                    <input type="text" id="txtHgRefNo01" name="txtHgRefNo01" title="헤이그특허청참조번호 첫번째" size="6" maxlength="4" inputmode="numeric" class="form_ctrl"> -
+                    <input type="text" id="txtHgRefNo02" name="txtHgRefNo02" title="헤이그특허청참조번호 두번째" size="9" maxlength="7" inputmode="numeric" class="form_ctrl">
+                </div>
+            </li>
+        </ul>
+    </fieldset>
+
+    <div class="btn_area">
+        <a href="javascript:fnSearch(1);" class="btn blue">검색</a>
+        <a href="javascript:searchCancel();" class="btn gray">초기화</a>
+    </div>
+</div>
