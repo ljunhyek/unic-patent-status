@@ -5,24 +5,24 @@ const XLSX = require('xlsx');
 
 class PatentService {
     constructor() {
-        // 환경변수 로딩 확인 및 기본값 설정
-        require('dotenv').config();
-        
+        // 환경변수는 이미 상위에서 로드되어 있어야 함
         this.apiKey = process.env.KIPRIS_API_KEY;
-        this.baseUrl = process.env.KIPRIS_API_BASE_URL;
+        this.baseUrl = process.env.KIPRIS_API_BASE_URL || 'http://plus.kipris.or.kr/kipo-api/kipi';
         this.parser = new xml2js.Parser({ explicitArray: false });
-        
+
         // 환경변수 검증
         if (!this.apiKey) {
             console.error('⚠️ KIPRIS_API_KEY가 설정되지 않았습니다.');
+            throw new Error('KIPRIS_API_KEY is required');
         }
         if (!this.baseUrl) {
             console.error('⚠️ KIPRIS_API_BASE_URL이 설정되지 않았습니다.');
         }
-        
+
         console.log('🔧 PatentService 초기화:', {
             baseUrl: this.baseUrl,
-            apiKeySet: !!this.apiKey
+            apiKeySet: !!this.apiKey,
+            nodeEnv: process.env.NODE_ENV
         });
     }
 

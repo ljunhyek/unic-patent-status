@@ -1,5 +1,12 @@
 // Vercel Serverless Function: 출원특허 검색 API
-require('dotenv').config();
+const path = require('path');
+
+// Vercel 환경에서는 환경변수가 자동으로 로드되지만, 로컬에서는 dotenv 사용
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+}
+
+// patentService require 시 환경변수가 이미 로드된 상태여야 함
 const patentService = require('../services/patentService');
 
 module.exports = async (req, res) => {
