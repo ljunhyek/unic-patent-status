@@ -2,6 +2,7 @@
 const axios = require('axios');
 const xml2js = require('xml2js');
 const XLSX = require('xlsx');
+const https = require('https');
 
 class PatentService {
     constructor() {
@@ -9,6 +10,14 @@ class PatentService {
         this.apiKey = process.env.KIPRIS_API_KEY;
         this.baseUrl = process.env.KIPRIS_API_BASE_URL || 'http://plus.kipris.or.kr/kipo-api/kipi';
         this.parser = new xml2js.Parser({ explicitArray: false });
+
+        // HTTPS Agent 설정 (정부 API SSL 인증서 처리용)
+        this.httpsAgent = new https.Agent({
+            rejectUnauthorized: process.env.NODE_ENV === 'production' ? true : false,
+            // 개발환경에서는 self-signed certificate 허용, 운영환경에서는 엄격하게 검증
+            keepAlive: true,
+            timeout: 10000
+        });
 
         // 환경변수 검증
         if (!this.apiKey) {
@@ -22,7 +31,8 @@ class PatentService {
         console.log('🔧 PatentService 초기화:', {
             baseUrl: this.baseUrl,
             apiKeySet: !!this.apiKey,
-            nodeEnv: process.env.NODE_ENV
+            nodeEnv: process.env.NODE_ENV,
+            sslVerification: process.env.NODE_ENV === 'production'
         });
     }
 
@@ -49,6 +59,7 @@ class PatentService {
                     searchType: 2,   // 특허고객번호 검색
                     searchVal: customerNumber
                 },
+                httpsAgent: this.httpsAgent, // SSL 인증서 문제 해결
                 timeout: 10000
             });
 
@@ -56,10 +67,26 @@ class PatentService {
 
             // 응답 데이터 파싱
             const data = response.data;
+            console.log('📊 원본 API 응답 구조:', JSON.stringify(data, null, 2));
 
             // API 응답 구조 확인 및 데이터 추출
-            if (!data || !data.items || !data.items.rightList) {
-                console.log('⚠️ 검색 결과 없음');
+            if (!data || data.resultCode !== '000' || !data.items) {
+                console.log('⚠️ API 응답 오류 또는 검색 결과 없음:', {
+                    resultCode: data?.resultCode,
+                    resultMsg: data?.resultMsg,
+                    hasItems: !!data?.items
+                });
+                return {
+                    customerNumber,
+                    applicantName: '정보 없음',
+                    totalCount: 0,
+                    patents: []
+                };
+            }
+
+            // rightList가 없거나 빈 경우 처리
+            if (!data.items.rightList) {
+                console.log('⚠️ rightList가 없음');
                 return {
                     customerNumber,
                     applicantName: '정보 없음',
@@ -69,7 +96,7 @@ class PatentService {
             }
 
             const rightList = Array.isArray(data.items.rightList) ? data.items.rightList : [data.items.rightList];
-            const totalCount = data.items.totalCount || rightList.length;
+            const totalCount = parseInt(data.totalCount || data.items.numOfRows || rightList.length);
 
             console.log('🔍 조회된 등록특허 수:', totalCount);
 
