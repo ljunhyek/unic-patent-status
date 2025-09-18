@@ -26,39 +26,40 @@ class PatentService {
         });
     }
 
-    // 등록특허 검색
+    // 등록특허 검색 - 특허청 등록원부 API 사용
     async searchRegisteredPatents(customerNumber) {
         try {
-            // 1단계: 기본 검색으로 특허 목록 가져오기
-            const url = `${this.baseUrl}/patUtiModInfoSearchSevice/getWordSearch`;
-            console.log('🌐 KIPRIS API 1차 호출:', { url, customerNumber, hasApiKey: !!this.apiKey });
-            
+            // 특허청 등록원부 API 호출
+            const url = process.env.PATENT_OFFICE_API_URL || 'https://apis.data.go.kr/1430000/PttRgstRtInfoInqSvc/getBusinessRightList';
+            const serviceKey = process.env.PATENT_OFFICE_API_KEY;
+
+            if (!serviceKey) {
+                console.error('⚠️ PATENT_OFFICE_API_KEY가 설정되지 않았습니다.');
+                throw new Error('PATENT_OFFICE_API_KEY is required');
+            }
+
+            console.log('🌐 특허청 등록원부 API 호출:', { url, customerNumber });
+
             const response = await axios.get(url, {
                 params: {
-                    word: customerNumber,
-                    ServiceKey: this.apiKey,
-                    numOfRows: 100, // 한 번에 최대 100개까지 요청
-                    pageNo: 1
+                    serviceKey: serviceKey,
+                    type: 'json',
+                    pageNo: 1,
+                    numOfRows: 100, // 최대 100개까지 조회
+                    searchType: 2,   // 특허고객번호 검색
+                    searchVal: customerNumber
                 },
                 timeout: 10000
             });
 
-            console.log('📡 KIPRIS API 응답 상태:', response.status);
-            console.log('📊 KIPRIS API 응답 크기:', JSON.stringify(response.data).length, 'bytes');
-            
-            // 응답 데이터 파싱
-            const allPatents = await this.parseResponse(response.data);
-            console.log('📋 파싱된 전체 특허 수:', allPatents.length);
-            
-            // 등록번호가 실제 값이 있는 특허만 필터링
-            const basicRegisteredPatents = allPatents.filter(p => 
-                p.registrationNumber && 
-                p.registrationNumber !== '-' && 
-                p.registrationNumber.trim() !== ''
-            );
-            console.log('🔍 등록특허 필터링 결과:', basicRegisteredPatents.length);
+            console.log('📡 특허청 API 응답 상태:', response.status);
 
-            if (basicRegisteredPatents.length === 0) {
+            // 응답 데이터 파싱
+            const data = response.data;
+
+            // API 응답 구조 확인 및 데이터 추출
+            if (!data || !data.items || !data.items.rightList) {
+                console.log('⚠️ 검색 결과 없음');
                 return {
                     customerNumber,
                     applicantName: '정보 없음',
@@ -67,73 +68,65 @@ class PatentService {
                 };
             }
 
-            // 2단계: 각 등록특허에 대해 상세정보 조회 (출원번호 기반)
-            const detailedPatents = await Promise.all(
-                basicRegisteredPatents.map(async (basicPatent) => {
-                    try {
-                        // 출원번호가 있는 경우에만 상세 정보 조회
-                        if (basicPatent.applicationNumber && basicPatent.applicationNumber !== '-') {
-                            console.log(`🔍 등록특허 상세 조회: ${basicPatent.applicationNumber}`);
-                            const detailInfo = await this.getBibliographyDetailInfo(basicPatent.applicationNumber);
-                            
-                            if (detailInfo) {
-                                // 기본 정보와 상세 정보 병합
-                                return {
-                                    // 기본 정보
-                                    applicationNumber: basicPatent.applicationNumber,
-                                    registrationNumber: detailInfo.registrationNumber || basicPatent.registrationNumber,
-                                    applicantName: detailInfo.applicantName || basicPatent.applicantName,
-                                    applicationDate: this.formatDate(detailInfo.applicationDate || basicPatent.applicationDate),
-                                    inventionTitle: detailInfo.inventionTitle || basicPatent.inventionTitle,
-                                    
-                                    // 상세 정보에서 가져온 중요 필드들
-                                    inventorName: detailInfo.inventorName || basicPatent.inventorName || '-',
-                                    registrationDate: this.formatDate(detailInfo.registrationDate || basicPatent.registrationDate),
-                                    claimCount: detailInfo.claimCount || basicPatent.claimCount || '-',
-                                    
-                                    // 기타 필드들
-                                    publicationDate: this.formatDate(detailInfo.publicationDate || basicPatent.publicationDate),
-                                    expirationDate: this.formatDate(detailInfo.expirationDate || basicPatent.expirationDate),
-                                    registrationStatus: detailInfo.registrationStatus || basicPatent.registrationStatus || '등록',
-                                    examStatus: detailInfo.examStatus || basicPatent.examStatus,
-                                    ipcCode: detailInfo.ipcCode || basicPatent.ipcCode,
-                                    abstract: detailInfo.abstract || basicPatent.abstract
-                                };
-                            }
-                        }
-                        
-                        // 상세 정보 조회 실패시 기본 정보 반환
-                        return {
-                            ...basicPatent,
-                            inventorName: basicPatent.inventorName || '-',
-                            claimCount: basicPatent.claimCount || '-'
-                        };
-                        
-                    } catch (error) {
-                        console.error(`등록특허 ${basicPatent.applicationNumber} 상세 정보 조회 실패:`, error.message);
-                        // 오류가 있어도 기본 정보는 반환
-                        return {
-                            ...basicPatent,
-                            inventorName: basicPatent.inventorName || '-',
-                            claimCount: basicPatent.claimCount || '-'
-                        };
-                    }
-                })
-            );
+            const rightList = Array.isArray(data.items.rightList) ? data.items.rightList : [data.items.rightList];
+            const totalCount = data.items.totalCount || rightList.length;
 
-            console.log('✅ 등록특허 상세 정보 조회 완료:', detailedPatents.length);
+            console.log('🔍 조회된 등록특허 수:', totalCount);
+
+            // 특허 데이터 변환
+            const patents = rightList.map(item => ({
+                // 기본 정보
+                applicationNumber: item.applNo || '-',
+                registrationNumber: item.rgstNo || '-',
+                applicantName: item.applicantInfo || item.rightHolderInfo || '-',
+                applicationDate: this.formatDateFromAPI(item.applDate),
+                inventionTitle: item.title || '-',
+
+                // 등록 정보 (발명자 필드 제거)
+                registrationDate: this.formatDateFromAPI(item.rgstDate),
+                claimCount: item.claimCount || '-',
+
+                // 추가 정보
+                publicationNumber: item.pubNo || '-',
+                publicationDate: this.formatDateFromAPI(item.pubDate),
+                expirationDate: this.formatDateFromAPI(item.cndrtExptnDate),
+                registrationStatus: item.rgstStatus || '등록',
+
+                // 권리자 정보
+                rightHolderInfo: item.rightHolderInfo || '-',
+                agentInfo: item.agentInfo || '-',
+                businessNo: item.businessNo || '-',
+
+                // UI에 필요한 추가 필드들 (연차료 계산용)
+                examStatus: '등록',
+                ipcCode: '-',
+                abstract: '-'
+            }));
+
+            const applicantName = patents[0]?.applicantName || '정보 없음';
 
             return {
                 customerNumber,
-                applicantName: detailedPatents[0]?.applicantName || '정보 없음',
-                totalCount: detailedPatents.length,
-                patents: detailedPatents
+                applicantName,
+                totalCount,
+                patents
             };
 
         } catch (error) {
             console.error('등록특허 API 호출 오류:', error.message);
+            if (error.response) {
+                console.error('API 응답 오류:', error.response.data);
+            }
             throw error;
         }
+    }
+
+    // 날짜 형식 변환 헬퍼 메서드 (YYYYMMDD -> YYYY.MM.DD)
+    formatDateFromAPI(dateStr) {
+        if (!dateStr || dateStr === '-' || dateStr.length !== 8) {
+            return '-';
+        }
+        return `${dateStr.substring(0, 4)}.${dateStr.substring(4, 6)}.${dateStr.substring(6, 8)}`;
     }
 
     // 출원특허 검색 (출원번호 기반 서지상세정보 조회)
