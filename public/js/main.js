@@ -57,6 +57,12 @@ function validateCustomerNumber(customerNumber) {
 // 날짜 포맷팅 (YYYY-MM-DD)
 function formatDate(dateStr) {
     if (!dateStr || dateStr === '-') return '-';
+
+    // YYYYMMDD 형식을 YYYY-MM-DD로 변환
+    if (dateStr.length === 8 && /^\d{8}$/.test(dateStr)) {
+        return dateStr.substring(0, 4) + '-' + dateStr.substring(4, 6) + '-' + dateStr.substring(6, 8);
+    }
+
     return dateStr;
 }
 

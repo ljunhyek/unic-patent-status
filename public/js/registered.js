@@ -107,7 +107,7 @@ function displayResults(data) {
     
     document.getElementById('resultCurrentDate').textContent = currentDate;
     document.getElementById('resultCustomerNumber').textContent = data.customerNumber;
-    document.getElementById('resultApplicantName').textContent = data.applicantName;
+    document.getElementById('resultRightHolderName').textContent = data.rightHolderName || data.applicantName;
     document.getElementById('resultTotalCount').textContent = data.totalCount;
     
     const resultsSection = document.getElementById('resultsSection');
@@ -166,6 +166,14 @@ function displayPaginatedResults() {
         
         // 안전한 문자열 처리
         const safeValue = (value) => value && value !== '-' ? value : '-';
+
+        // 출원번호 형식 변환 (1020160042595 -> 10-2016-0042595)
+        const formatApplicationNumber = (appNumber) => {
+            if (!appNumber || appNumber === '-' || appNumber.length !== 13) {
+                return appNumber;
+            }
+            return appNumber.substring(0, 2) + '-' + appNumber.substring(2, 6) + '-' + appNumber.substring(6);
+        };
         
         const applicantName = safeValue(patent.applicantName);
         const inventionTitle = safeValue(patent.inventionTitle);
@@ -199,14 +207,15 @@ function displayPaginatedResults() {
         }
         
         row.innerHTML = [
-            '<td class="patent-number">' + safeValue(patent.applicationNumber) + '</td>',
+            '<td class="patent-number">' + formatApplicationNumber(safeValue(patent.applicationNumber)) + '</td>',
             '<td class="patent-number">' + safeValue(patent.registrationNumber) + '</td>',
             '<td class="applicant-name-clean applicant-name">' + applicantName + '</td>',
             '<td>' + formatDate(patent.applicationDate) + '</td>',
             '<td>' + formatDate(patent.registrationDate) + '</td>',
             '<td>' + formatDate(patent.expirationDate) + '</td>',
             '<td class="invention-title-natural invention-title">' + inventionTitle + '</td>',
-            '<td>' + safeValue(patent.claimCount) + '</td>'
+            '<td>' + safeValue(patent.claimCount) + '</td>',
+            '<td>' + safeValue(patent.registrationStatus) + '</td>'
         ].concat(annualFeeColumns).join('');
         
         tableBody.appendChild(row);

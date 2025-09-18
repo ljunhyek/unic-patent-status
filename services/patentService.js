@@ -101,40 +101,56 @@ class PatentService {
             console.log('🔍 조회된 등록특허 수:', totalCount);
 
             // 특허 데이터 변환
-            const patents = rightList.map(item => ({
-                // 기본 정보
-                applicationNumber: item.applNo || '-',
-                registrationNumber: item.rgstNo || '-',
-                applicantName: item.applicantInfo || item.rightHolderInfo || '-',
-                applicationDate: this.formatDateFromAPI(item.applDate),
-                inventionTitle: item.title || '-',
+            const patents = rightList.map(item => {
+                // 출원인명에서 첫 번째 이름만 추출 (콤마로 구분된 경우)
+                const getFirstApplicant = (applicantStr) => {
+                    if (!applicantStr || applicantStr === '-') return '-';
+                    return applicantStr.split(',')[0].trim();
+                };
 
-                // 등록 정보 (발명자 필드 제거)
-                registrationDate: this.formatDateFromAPI(item.rgstDate),
-                claimCount: item.claimCount || '-',
+                return {
+                    // 기본 정보
+                    applicationNumber: item.applNo || '-',
+                    registrationNumber: item.rgstNo || '-',
+                    applicantName: getFirstApplicant(item.applicantInfo) || getFirstApplicant(item.rightHolderInfo) || '-',
+                    applicationDate: this.formatDateFromAPI(item.applDate),
+                    inventionTitle: item.title || '-',
 
-                // 추가 정보
-                publicationNumber: item.pubNo || '-',
-                publicationDate: this.formatDateFromAPI(item.pubDate),
-                expirationDate: this.formatDateFromAPI(item.cndrtExptnDate),
-                registrationStatus: item.rgstStatus || '등록',
+                    // 등록 정보 (발명자 필드 제거)
+                    registrationDate: this.formatDateFromAPI(item.rgstDate),
+                    claimCount: item.claimCount || '-',
 
-                // 권리자 정보
-                rightHolderInfo: item.rightHolderInfo || '-',
-                agentInfo: item.agentInfo || '-',
-                businessNo: item.businessNo || '-',
+                    // 추가 정보
+                    publicationNumber: item.pubNo || '-',
+                    publicationDate: this.formatDateFromAPI(item.pubDate),
+                    expirationDate: this.formatDateFromAPI(item.cndrtExptnDate),
+                    registrationStatus: item.rgstStatus || '등록',
 
-                // UI에 필요한 추가 필드들 (연차료 계산용)
-                examStatus: '등록',
-                ipcCode: '-',
-                abstract: '-'
-            }));
+                    // 권리자 정보
+                    rightHolderInfo: item.rightHolderInfo || '-',
+                    agentInfo: item.agentInfo || '-',
+                    businessNo: item.businessNo || '-',
+
+                    // UI에 필요한 추가 필드들 (연차료 계산용)
+                    examStatus: '등록',
+                    ipcCode: '-',
+                    abstract: '-'
+                };
+            });
 
             const applicantName = patents[0]?.applicantName || '정보 없음';
+
+            // 권리자명 추출 (첫 번째 특허의 rightHolderInfo에서 첫 번째 이름만)
+            const getFirstRightHolder = (rightHolderStr) => {
+                if (!rightHolderStr || rightHolderStr === '-') return '정보 없음';
+                return rightHolderStr.split(',')[0].trim();
+            };
+            const rightHolderName = getFirstRightHolder(patents[0]?.rightHolderInfo) || '정보 없음';
 
             return {
                 customerNumber,
                 applicantName,
+                rightHolderName,
                 totalCount,
                 patents
             };
