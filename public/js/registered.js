@@ -65,26 +65,13 @@ async function handleSearch(e) {
         // 결과 표시
         displayResults(data);
         console.log('✅ 결과 표시 완료');
-        
-        // 상세 정보 조회 (옵션)
-        try {
-            if (data.patents && data.patents.length > 0) {
-                console.log('🔍 상세 정보 조회 시작');
-                showDetailLoadingMessage();
-                await fetchPatentDetails(data.patents);
-                hideDetailLoadingMessage();
-                console.log('✅ 상세 정보 조회 완료');
-            }
-        } catch (detailError) {
-            console.warn('⚠️ 상세 정보 조회 실패:', detailError);
-            hideDetailLoadingMessage();
-        }
+
+        // 등록특허는 특허청 등록원부 API 데이터만 사용 (키프리스 API 호출 안함)
         
     } catch (error) {
         console.error('❌ 검색 오류:', error);
         showError(error.message);
         hideResults();
-        hideDetailLoadingMessage();
     } finally {
         hideLoading(searchBtn, originalText);
     }
@@ -345,101 +332,8 @@ function changePage(page) {
     });
 }
 
-// 특허 상세 정보 조회
-async function fetchPatentDetails(patents) {
-    if (!patents || patents.length === 0) return;
-    
-    try {
-        const applicationNumbers = patents.map(p => p.applicationNumber).filter(num => num && num !== '-');
-        
-        if (applicationNumbers.length === 0) return;
-        
-        const response = await fetch('/api/get-patent-details', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ applicationNumbers })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success && data.details) {
-            updatePatentTable(data.details);
-        }
-        
-    } catch (error) {
-        console.error('상세 정보 조회 오류:', error);
-    }
-}
-
-// 특허 테이블 업데이트
-function updatePatentTable(details) {
-    const tableBody = document.getElementById('patentTableBody');
-    const rows = tableBody.getElementsByTagName('tr');
-    
-    currentPatents.forEach((patent, index) => {
-        if (index >= rows.length) return;
-        
-        const row = rows[index];
-        const cells = row.getElementsByTagName('td');
-        const applicationNumber = patent.applicationNumber;
-        
-        if (details[applicationNumber]) {
-            const detail = details[applicationNumber];
-            
-            if (detail.registrationNumber && detail.registrationNumber !== '-') {
-                cells[1].textContent = detail.registrationNumber;
-                currentPatents[index].registrationNumber = detail.registrationNumber;
-                window.currentPatents[index].registrationNumber = detail.registrationNumber;
-            }
-            
-            if (detail.registrationDate && detail.registrationDate !== '-') {
-                cells[5].textContent = formatDate(detail.registrationDate);
-                currentPatents[index].registrationDate = detail.registrationDate;
-                window.currentPatents[index].registrationDate = detail.registrationDate;
-            }
-            
-            if (detail.expirationDate && detail.expirationDate !== '-') {
-                cells[6].textContent = formatDate(detail.expirationDate);
-                currentPatents[index].expirationDate = detail.expirationDate;
-                window.currentPatents[index].expirationDate = detail.expirationDate;
-            }
-            
-            if (detail.claimCount && detail.claimCount !== '-') {
-                cells[8].textContent = detail.claimCount;
-                currentPatents[index].claimCount = detail.claimCount;
-                window.currentPatents[index].claimCount = detail.claimCount;
-            }
-        }
-    });
-}
-
-// 상세 정보 로딩 메시지
-function showDetailLoadingMessage() {
-    const existingMessage = document.querySelector('.detail-loading-message');
-    if (existingMessage) {
-        existingMessage.remove();
-    }
-
-    const loadingDiv = document.createElement('div');
-    loadingDiv.className = 'detail-loading-message';
-    loadingDiv.innerHTML = '🔍 상세 정보를 조회 중입니다...';
-    loadingDiv.style.cssText = 'background: #e0f2fe; color: #01579b; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; text-align: center;';
-    
-    const resultsSection = document.getElementById('resultsSection');
-    const tableContainer = resultsSection.querySelector('.table-container');
-    if (tableContainer) {
-        tableContainer.before(loadingDiv);
-    }
-}
-
-function hideDetailLoadingMessage() {
-    const existingMessage = document.querySelector('.detail-loading-message');
-    if (existingMessage) {
-        existingMessage.remove();
-    }
-}
+// 등록특허는 특허청 등록원부 API 데이터만 사용하므로 상세정보 조회 불필요
+// (fetchPatentDetails, updatePatentTable, showDetailLoadingMessage, hideDetailLoadingMessage 함수 제거됨)
 
 // 결과 숨기기
 function hideResults() {
