@@ -165,7 +165,7 @@ function displayPaginatedResults() {
     
     paginatedPatents.forEach((patent, index) => {
         const row = document.createElement('tr');
-        
+
         // 안전한 문자열 처리
         const safeValue = (value) => value && value !== '-' ? value : '-';
 
@@ -176,9 +176,18 @@ function displayPaginatedResults() {
             }
             return appNumber.substring(0, 2) + '-' + appNumber.substring(2, 6) + '-' + appNumber.substring(6);
         };
-        
+
         const applicantName = safeValue(patent.applicantName);
         const inventionTitle = safeValue(patent.inventionTitle);
+
+        // 디버깅: 등록상태 확인
+        console.log('🔍 특허 데이터 확인:', {
+            applicationNumber: patent.applicationNumber,
+            inventionTitle: patent.inventionTitle,
+            expirationDate: patent.expirationDate,
+            registrationStatus: patent.registrationStatus,
+            claimCount: patent.claimCount
+        });
         
         // 연차료 계산 데이터가 있는 경우 표시
         const calculatedData = patent.calculatedData;
