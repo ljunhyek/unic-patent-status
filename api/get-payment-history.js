@@ -49,9 +49,11 @@ module.exports = async (req, res) => {
         // 특허청 등록원부 이력 API 호출
         const paymentHistory = await patentService.getPatentRegisterHistory(cleanedNumber);
 
+        console.log('📊 patentService 응답:', cleanedNumber, paymentHistory);
+
         res.json({
             success: true,
-            paymentHistory: paymentHistory
+            paymentInfo: paymentHistory
         });
 
     } catch (error) {

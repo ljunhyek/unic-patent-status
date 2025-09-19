@@ -86,3 +86,16 @@ totalCount 총건수 5 1 90
 t)의 총 건
 
 
+1. 등록특허_화면.png를 읽고 다음을 수정해줘
+1. 출원인은 1번째 1명만 나오도록 할것
+2. 존속기간 만료일(cndrtExptnDate)이 잘못 나오고 있음, 재대로 표시
+3.발명의 명칭(title)을 제대로 표시 
+4. 목록의 제목 줄 위의 등록특허 수  앞에 '출원인:'을 권리자로 수정하고 rightHolderInfo 표시
+5. 목록 제목줄 중 '청구항수' 다음에 '등록상태' 추가 (직전년도 납부연월 앞에)
+- 그리고 각각의 목록에 등록상태 값 rgstStatus 표시
+
+
+  2. 처음에 고객번호를 사용자  입력받는 것을 '사업자번호'(숫자 10자리)와 '고객번호'를 라디오 버튼으로 선택한 다음 해당 값을 입력받게 해줘, 나머지 특허로 api 활용하여 화면에 데이터 표시하는 것은
+   동일
+   만약에 사업자 번호를 선택한 경우 아래 예시처럼 searchType=1 (고객번호는 searchType=2 )
+https://apis.data.go.kr/1430000/PttRgstRtInfoInqSvc/getBusinessRightList?serviceKey=0459d4d5c5d11a5e71b95c96a6069daffb1247f64357ce6354878517f6d06484&type=json&pageNo=1&numOfRows=10&searchType=2&searchVal=https://apis.data.go.kr/1430000/PttRgstRtInfoInqSvc/getBusinessRightList?serviceKey=0459d4d5c5d11a5e71b95c96a6069daffb1247f64357ce6354878517f6d06484&type=json&pageNo=1&numOfRows=10&searchType=1&searchVal=사업자번호입력값

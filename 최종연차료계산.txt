@@ -49,3 +49,8 @@
 | 구분 | 기간 | 납부금액 |
 |------|------|----------|
 | **권리회복** | 추가납부기간(또는 보전기간) 만료일부터 3개월 이내 | 연차등록료 2배 상당액 |
+
+  I see the issue now! The API is returning paymentHistory but the frontend is checking for paymentInfo. Let me check the api/get-payment-history.js file again.
+
+   paymentInfo 관련 로직은 필요없으니 헷갈리지 않게 다 삭제해버리는 게 좋을거 같아, 아까도 너는 I see the issue now! The API is returning paymentHistory but the frontend is checking for paymentInfo. Let me check the api/get-payment-history.js file again.
+얘기하면서 다 수정했다고 하더니 수정이 안됨, 벌써 몇번째야, 지친다, 정말..

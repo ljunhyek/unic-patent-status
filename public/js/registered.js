@@ -1,5 +1,5 @@
 // registered.js - 등록특허 현황 검색 기능
-console.log('🔄 등록특허 검색 스크립트 로드됨 - 버전: 2025.09.19.v7');
+console.log('🔄 등록특허 검색 스크립트 로드됨 - 버전: 2025.09.19.v12');
 
 let currentPatents = [];
 let currentPage = 1;
@@ -423,8 +423,22 @@ async function fetchPaymentHistory(patents) {
                 });
 
                 const paymentData = await response.json();
+                console.log('📊 납부정보 API 응답 상세:', patent.registrationNumber, {
+                    status: response.status,
+                    success: paymentData.success,
+                    hasPaymentInfo: !!paymentData.paymentInfo,
+                    error: paymentData.error,
+                    fullResponse: paymentData
+                });
 
-                if (paymentData.success && paymentData.paymentInfo) {
+                // 납부정보가 있고 유효한 데이터인지 확인
+                const hasValidPaymentInfo = paymentData.success &&
+                    paymentData.paymentInfo &&
+                    (paymentData.paymentInfo.payDate !== '-' ||
+                     paymentData.paymentInfo.lastAnnl !== '-' ||
+                     paymentData.paymentInfo.payAmount !== '-');
+
+                if (hasValidPaymentInfo) {
                     // 직전년도 납부정보 저장
                     patent.paymentHistory = paymentData.paymentInfo;
 
@@ -437,11 +451,28 @@ async function fetchPaymentHistory(patents) {
 
                     console.log('✅ 납부정보 조회 성공:', patent.registrationNumber, paymentData.paymentInfo);
                 } else {
-                    console.warn('⚠️ 납부정보 조회 실패:', patent.registrationNumber, paymentData.error);
+                    console.warn('⚠️ 납부정보 없음:', patent.registrationNumber, paymentData.error || '납부 정보가 없습니다.');
+
+                    // 납부정보가 없는 경우도 빈 값으로 저장
+                    patent.paymentHistory = {
+                        lastAnnl: '-',
+                        payDate: '-',
+                        payAmount: '-'
+                    };
+
+                    const patentIndex = currentPatents.findIndex(p => p.registrationNumber === patent.registrationNumber);
+                    if (patentIndex !== -1) {
+                        currentPatents[patentIndex].paymentHistory = patent.paymentHistory;
+                        window.currentPatents[patentIndex].paymentHistory = patent.paymentHistory;
+                    }
                 }
 
             } catch (error) {
-                console.error('❌ 개별 납부정보 조회 오류:', patent.registrationNumber, error.message);
+                console.error('❌ 개별 납부정보 조회 오류:', patent.registrationNumber, {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name
+                });
             }
 
             // API 호출 간격 조절 (과부하 방지)
@@ -457,6 +488,27 @@ async function fetchPaymentHistory(patents) {
         console.error('❌ 납부정보 조회 전체 오류:', error);
     }
 }
+
+// 날짜 형식 변환 (YYYYMMDD -> YYYY.MM.DD)
+function formatPaymentDate(dateStr) {
+    if (!dateStr || dateStr === '-' || dateStr.length !== 8) {
+        return dateStr || '-';
+    }
+    return `${dateStr.substring(0, 4)}.${dateStr.substring(4, 6)}.${dateStr.substring(6, 8)}`;
+}
+
+// 금액 형식 변환 (천단위 쉼표 추가)
+function formatPaymentAmount(amount) {
+    if (!amount || amount === '-') {
+        return '-';
+    }
+    // 숫자를 천단위로 포맷하고 "원" 추가
+    return Number(amount).toLocaleString('ko-KR') + '원';
+}
+
+// window 객체에 함수 등록 (registered.ejs에서 사용하기 위함)
+window.formatPaymentDate = formatPaymentDate;
+window.formatPaymentAmount = formatPaymentAmount;
 
 // 납부정보를 화면에 업데이트
 function updatePaymentHistoryDisplay() {
@@ -475,9 +527,12 @@ function updatePaymentHistoryDisplay() {
         const cells = row.getElementsByTagName('td');
 
         // 직전년도 납부연월 컬럼 (9번째 컬럼)
-        if (patent.paymentHistory && patent.paymentHistory.payDate !== '-') {
-            const paymentInfo = `${patent.paymentHistory.payDate} (${patent.paymentHistory.lastAnnl} / ${patent.paymentHistory.payAmount})`;
+        if (patent.paymentHistory && patent.paymentHistory.payDate && patent.paymentHistory.payDate !== '-') {
+            const formattedDate = formatPaymentDate(patent.paymentHistory.payDate);
+            const formattedAmount = formatPaymentAmount(patent.paymentHistory.payAmount);
+            const paymentInfo = `${formattedDate} (${patent.paymentHistory.lastAnnl}년차 / ${formattedAmount})`;
             cells[9].textContent = paymentInfo;
+            console.log('💰 납부정보 표시:', patent.registrationNumber, paymentInfo);
         } else {
             cells[9].textContent = '-';
         }

@@ -1,33 +1,22 @@
-🔧 PatentService 초기화: {
-  baseUrl: 'http://plus.kipris.or.kr/kipo-api/kipi',
-  apiKeySet: true,
-  nodeEnv: 'development',
-  sslVerification: false
-}
-node:events:496
-      throw er; // Unhandled 'error' event
-      ^
-
-Error: listen EADDRINUSE: address already in use :::3001
-    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
-    at listenInCluster (node:net:1997:12)
-    at Server.listen (node:net:2102:7)
-    at Function.listen (C:\ip\unic-patent-status\node_modules\express\lib\application.js:635:24)
-    at Object.<anonymous> (C:\ip\unic-patent-status\server.local.js:96:9)
-    at Module._compile (node:internal/modules/cjs/loader:1730:14)
-    at Object..js (node:internal/modules/cjs/loader:1895:10)
-    at Module.load (node:internal/modules/cjs/loader:1465:32)
-    at Function._load (node:internal/modules/cjs/loader:1282:12)
-    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
-Emitted 'error' event on Server instance at:
-    at emitErrorNT (node:net:1976:8)
-    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
-  code: 'EADDRINUSE',
-  errno: -4091,
-  syscall: 'listen',
-  address: '::',
-  port: 3001
-}
-
-Node.js v22.17.1
-[nodemon] app crashed - waiting for file changes before starting...
+registered.js?v=2025.09.19.v12:454 ⚠️ 납부정보 없음: 4021387590000 납부 정보가 없습니다.
+fetchPaymentHistory @ registered.js?v=2025.09.19.v12:454
+await in fetchPaymentHistory
+handleSearch @ registered.js?v=2025.09.19.v12:121이 경고 이해하기
+registered.js?v=2025.09.19.v12:535 💰 납부정보 표시: 1016842200000 2025.04.03 (9년차 / 110,400원)
+registered.js?v=2025.09.19.v12:535 💰 납부정보 표시: 1021884060000 2025.04.03 (5년차 / 32,200원)
+registered.js?v=2025.09.19.v12:535 💰 납부정보 표시: 1023189490000 2024.08.13 (4년차 / 116,000원)
+registered.js?v=2025.09.19.v12:535 💰 납부정보 표시: 1023290780000 2024.09.11 (4년차 / 76,000원)
+registered.js?v=2025.09.19.v12:535 💰 납부정보 표시: 1027879290000 2025.03.25 (3년차 / 65,700원)
+registered.js?v=2025.09.19.v12:541 ✅ 납부정보 화면 업데이트 완료
+registered.js?v=2025.09.19.v12:122 ✅ 직전년도 납부정보 조회 완료
+registered.js?v=2025.09.19.v12:674 💰 연차료 계산 버튼 클릭
+(색인):496 🔢 calculateWithSelectedDiscount() 함수 실행
+(색인):505 📝 선택된 감면 유형: type1
+(색인):510 ⚡ performNewAnnuityCalculation() 호출
+(색인):528 🧮 performNewAnnuityCalculation() 시작, discountType: type1
+(색인):529 📊 window.currentPatents: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+(색인):537 ✅ 특허 데이터 확인됨, 계산 시작
+(색인):732 Uncaught RangeError: Invalid time value
+    at Date.toISOString (<anonymous>)
+    at performNewAnnuityCalculation ((색인):732:60)
+    at HTMLButtonElement.calculateWithSelectedDiscount ((색인):511:5)

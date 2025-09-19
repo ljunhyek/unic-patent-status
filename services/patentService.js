@@ -193,6 +193,17 @@ class PatentService {
             const data = response.data;
             console.log('📊 JSON 응답 결과:', JSON.stringify(data, null, 2));
 
+            // API 응답 구조 상세 분석
+            console.log('🔍 API 응답 구조 분석:', {
+                hasData: !!data,
+                resultCode: data?.resultCode,
+                resultMsg: data?.resultMsg,
+                hasItems: !!data?.items,
+                hasPay: !!data?.items?.pay,
+                payType: Array.isArray(data?.items?.pay) ? 'array' : typeof data?.items?.pay,
+                payLength: Array.isArray(data?.items?.pay) ? data.items.pay.length : 'not array'
+            });
+
             // <pay> 데이터에서 마지막 항목의 연차 정보 추출
             if (data && data.items && Array.isArray(data.items.pay) && data.items.pay.length > 0) {
                 const lastPayItem = data.items.pay[data.items.pay.length - 1]; // <pay>의 마지막 항목
@@ -221,10 +232,17 @@ class PatentService {
 
         } catch (error) {
             console.error('직전년도 납부정보 API 호출 오류:', error.message);
+            console.error('오류 상세:', {
+                code: error.code,
+                response: error.response?.data,
+                status: error.response?.status,
+                message: error.message
+            });
             return {
                 lastAnnl: '-',
                 payDate: '-',
-                payAmount: '-'
+                payAmount: '-',
+                error: error.message
             };
         }
     }

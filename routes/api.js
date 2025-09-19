@@ -389,7 +389,7 @@ router.post('/get-payment-history', async (req, res) => {
 
         res.json({
             success: true,
-            paymentHistory: paymentHistory
+            paymentInfo: paymentHistory
         });
 
     } catch (error) {

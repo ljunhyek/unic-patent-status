@@ -24,7 +24,10 @@
       "Bash(findstr:*)",
       "Bash(netstat:*)",
       "mcp__sequential-thinking__sequentialthinking",
-      "WebFetch(domain:unic-patent-status.vercel.app)"
+      "WebFetch(domain:unic-patent-status.vercel.app)",
+      "Bash(python:*)",
+      "Bash(npm run start-dev:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": []
