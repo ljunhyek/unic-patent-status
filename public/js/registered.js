@@ -1,5 +1,5 @@
 // registered.js - 등록특허 현황 검색 기능
-console.log('🔄 등록특허 검색 스크립트 로드됨 - 버전: 2025.08.21.v3');
+console.log('🔄 등록특허 검색 스크립트 로드됨 - 버전: 2025.09.19.v7');
 
 let currentPatents = [];
 let currentPage = 1;
@@ -89,15 +89,19 @@ async function handleSearch(e) {
     try {
         // API 호출
         console.log('🌐 API 호출 시작');
+        const requestData = {
+            searchType: searchType,
+            searchValue: searchValue
+        };
+        console.log('📤 전송할 데이터:', requestData);
+        console.log('📤 JSON 문자열:', JSON.stringify(requestData));
+
         const response = await fetch('/api/search-registered', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                searchType: searchType,
-                searchValue: searchValue
-            })
+            body: JSON.stringify(requestData)
         });
         
         const data = await response.json();

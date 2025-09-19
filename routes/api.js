@@ -14,7 +14,10 @@ router.post('/search-registered', async (req, res) => {
             nodeEnv: process.env.NODE_ENV
         });
 
+        console.log('📥 받은 요청 body:', JSON.stringify(req.body, null, 2));
         const { searchType, searchValue } = req.body;
+        console.log('📝 파싱된 데이터 - searchType:', searchType, '타입:', typeof searchType);
+        console.log('📝 파싱된 데이터 - searchValue:', searchValue, '타입:', typeof searchValue);
 
         if (!searchType || !searchValue) {
             console.log('❌ 검색 유형 또는 검색 값 없음');

@@ -25,30 +25,56 @@ module.exports = async (req, res) => {
 
     try {
         console.log('🔍 등록특허 API 호출 시작:', req.body);
-        
-        const { customerNumber } = req.body;
-        
-        if (!customerNumber) {
-            console.log('❌ 고객번호 없음');
+        console.log('📥 받은 요청 body:', JSON.stringify(req.body, null, 2));
+
+        const { searchType, searchValue } = req.body;
+        console.log('📝 파싱된 데이터 - searchType:', searchType, '타입:', typeof searchType);
+        console.log('📝 파싱된 데이터 - searchValue:', searchValue, '타입:', typeof searchValue);
+
+        if (!searchType || !searchValue) {
+            console.log('❌ 검색 유형 또는 검색 값 없음');
             return res.status(400).json({
                 success: false,
-                error: '고객번호를 입력해주세요.'
+                error: '검색 유형과 검색 값을 입력해주세요.'
             });
         }
 
-        // 고객번호 검증 (12자리 숫자)
-        const cleanedNumber = customerNumber.trim();
-        
-        if (!/^\d{12}$/.test(cleanedNumber)) {
-            console.log('❌ 고객번호 형식 오류:', cleanedNumber);
+        // 검색 값 검증
+        const cleanedValue = searchValue.trim();
+        console.log('🔢 검색 유형:', searchType, '검색 값:', cleanedValue);
+
+        // 검색 유형에 따른 검증
+        if (searchType === '1') { // 사업자번호
+            if (!/^\d{10}$/.test(cleanedValue)) {
+                console.log('❌ 사업자번호 형식 오류:', cleanedValue);
+                return res.status(400).json({
+                    success: false,
+                    error: '사업자번호는 10자리 숫자여야 합니다.'
+                });
+            }
+        } else if (searchType === '2') { // 고객번호
+            if (!/^\d{12}$/.test(cleanedValue)) {
+                console.log('❌ 고객번호 형식 오류:', cleanedValue);
+                return res.status(400).json({
+                    success: false,
+                    error: '고객번호는 12자리 숫자여야 합니다.'
+                });
+            }
+        } else {
+            console.log('❌ 잘못된 검색 유형:', searchType);
             return res.status(400).json({
                 success: false,
-                error: '고객번호는 12자리 숫자여야 합니다.'
+                error: '올바른 검색 유형을 선택해주세요.'
             });
         }
-        
+
+        console.log('🚀 특허 서비스 호출 시작');
         // 등록특허 정보 조회
-        const result = await patentService.searchRegisteredPatents(cleanedNumber);
+        const result = await patentService.searchRegisteredPatents(cleanedValue, searchType);
+        console.log('✅ 특허 서비스 결과:', {
+            totalCount: result?.totalCount,
+            patentsLength: result?.patents?.length
+        });
         
         res.json({
             success: true,
