@@ -18,4 +18,21 @@ ServiceKey=3Mc0FYs/RDD7M4buAiSD8oaxme74hLKKGZ0T0jjvePY=
 
 
 
+https://www.patent.go.kr/smart/openapi/prv/user/selectRegisterHistList.do
 
+
+https://www.patent.go.kr/smart/openapi/prv/user/selectRegisterHistList.do
+
+…/getBusinessRightList?serviceKey=키&type=json&pageNo=1&numOfRows=10&searchType=1&searchVal=3018108302
+
+
+특허청_등록원부 실시간 정보 조회 서비스
+
+https://apis.data.go.kr/1430000/PttRgstRtInfoInqSvc/getBusinessRightList?serviceKey=0459d4d5c5d11a5e71b95c96a6069daffb1247f64357ce6354878517f6d06484&type=json&pageNo=1&numOfRows=10&searchType=2&searchVal=120230740981
+
+https://apis.data.go.kr/1430000/PttRgstRtInfoInqSvc/getBusinessRightList?serviceKey=0459d4d5c5d11a5e71b95c96a6069daffb1247f64357ce6354878517f6d06484&type=json&pageNo=1&numOfRows=10&searchType=2&searchVal=https://apis.data.go.kr/1430000/PttRgstRtInfoInqSvc/getBusinessRightList?serviceKey=0459d4d5c5d11a5e71b95c96a6069daffb1247f64357ce6354878517f6d06484&type=json&pageNo=1&numOfRows=10&searchType=1&searchVal=3018108302
+
+
+http://kpat.kipris.or.kr
+
+0459d4d5c5d11a5e71b95c96a6069daffb1247f64357ce6354878517f6d06484

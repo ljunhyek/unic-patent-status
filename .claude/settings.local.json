@@ -19,7 +19,12 @@
       "WebFetch(domain:claude.ai)",
       "Bash(git rm:*)",
       "Bash(vercel logs:*)",
-      "WebFetch(domain:localhost)"
+      "WebFetch(domain:localhost)",
+      "Bash(tasklist)",
+      "Bash(findstr:*)",
+      "Bash(netstat:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "WebFetch(domain:unic-patent-status.vercel.app)"
     ],
     "deny": [],
     "ask": []

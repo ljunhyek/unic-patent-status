@@ -107,7 +107,9 @@ function displayResults(data) {
     
     document.getElementById('resultCurrentDate').textContent = currentDate;
     document.getElementById('resultCustomerNumber').textContent = data.customerNumber;
-    document.getElementById('resultRightHolderName').textContent = data.rightHolderName || data.applicantName;
+    // rightHolderName이 있으면 사용하고, 없으면 applicantName 사용
+    const rightHolderToDisplay = data.rightHolderName || data.applicantName || '정보 없음';
+    document.getElementById('resultRightHolderName').textContent = rightHolderToDisplay;
     document.getElementById('resultTotalCount').textContent = data.totalCount;
     
     const resultsSection = document.getElementById('resultsSection');
