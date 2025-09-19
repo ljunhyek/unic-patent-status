@@ -11,13 +11,29 @@
         <section class="search-section">
             <form class="search-form" id="searchForm">
                 <div class="form-group">
-                    <label for="customerNumber" class="form-label">고객번호</label>
+                    <!-- 검색 유형 선택 -->
+                    <div class="search-type-group" style="margin-bottom: 1rem;">
+                        <label class="form-label">검색 유형</label>
+                        <div class="radio-group" style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                            <label class="radio-option" style="display: flex; align-items: center; cursor: pointer;">
+                                <input type="radio" name="searchType" value="1" id="businessNumberType" style="margin-right: 0.5rem;">
+                                <span>사업자번호 (10자리)</span>
+                            </label>
+                            <label class="radio-option" style="display: flex; align-items: center; cursor: pointer;">
+                                <input type="radio" name="searchType" value="2" id="customerNumberType" checked style="margin-right: 0.5rem;">
+                                <span>고객번호 (12자리)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 검색 입력 -->
+                    <label for="searchInput" class="form-label" id="searchInputLabel">고객번호</label>
                     <div class="input-group">
-                        <input 
-                            type="text" 
-                            id="customerNumber" 
-                            name="customerNumber" 
-                            class="form-input customer-number-input"
+                        <input
+                            type="text"
+                            id="searchInput"
+                            name="searchInput"
+                            class="form-input search-input"
                             placeholder="예: 120190612244"
                             maxlength="12"
                             pattern="[0-9]{12}"
@@ -27,7 +43,7 @@
                             🔍 검색하기
                         </button>
                     </div>
-                    <div class="form-hint">12자리 숫자 입력하세요</div>
+                    <div class="form-hint" id="searchInputHint">12자리 숫자 입력하세요</div>
                 </div>
                 <button type="button" class="btn btn-secondary find-customer-btn" id="findCustomerBtn">
                     고객번호 찾기

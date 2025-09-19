@@ -13,38 +13,54 @@ router.post('/search-registered', async (req, res) => {
             apiBaseUrl: process.env.KIPRIS_API_BASE_URL,
             nodeEnv: process.env.NODE_ENV
         });
-        
-        const { customerNumber } = req.body;
-        
-        if (!customerNumber) {
-            console.log('❌ 고객번호 없음');
+
+        const { searchType, searchValue } = req.body;
+
+        if (!searchType || !searchValue) {
+            console.log('❌ 검색 유형 또는 검색 값 없음');
             return res.status(400).json({
                 success: false,
-                error: '고객번호를 입력해주세요.'
+                error: '검색 유형과 검색 값을 입력해주세요.'
             });
         }
 
-        // 고객번호 검증 (12자리 숫자)
-        const cleanedNumber = customerNumber.trim();
-        console.log('🔢 정리된 고객번호:', cleanedNumber);
-        
-        // 12자리 숫자 검증
-        if (!/^\d{12}$/.test(cleanedNumber)) {
-            console.log('❌ 고객번호 형식 오류:', cleanedNumber);
+        // 검색 값 검증
+        const cleanedValue = searchValue.trim();
+        console.log('🔢 검색 유형:', searchType, '검색 값:', cleanedValue);
+
+        // 검색 유형에 따른 검증
+        if (searchType === '1') { // 사업자번호
+            if (!/^\d{10}$/.test(cleanedValue)) {
+                console.log('❌ 사업자번호 형식 오류:', cleanedValue);
+                return res.status(400).json({
+                    success: false,
+                    error: '사업자번호는 10자리 숫자여야 합니다.'
+                });
+            }
+        } else if (searchType === '2') { // 고객번호
+            if (!/^\d{12}$/.test(cleanedValue)) {
+                console.log('❌ 고객번호 형식 오류:', cleanedValue);
+                return res.status(400).json({
+                    success: false,
+                    error: '고객번호는 12자리 숫자여야 합니다.'
+                });
+            }
+        } else {
+            console.log('❌ 잘못된 검색 유형:', searchType);
             return res.status(400).json({
                 success: false,
-                error: '고객번호는 12자리 숫자여야 합니다.'
+                error: '올바른 검색 유형을 선택해주세요.'
             });
         }
-        
+
         console.log('🚀 특허 서비스 호출 시작');
         // 등록특허 정보 조회
-        const result = await patentService.searchRegisteredPatents(cleanedNumber);
-        console.log('✅ 특허 서비스 결과:', { 
-            totalCount: result?.totalCount, 
-            patentsLength: result?.patents?.length 
+        const result = await patentService.searchRegisteredPatents(cleanedValue, searchType);
+        console.log('✅ 특허 서비스 결과:', {
+            totalCount: result?.totalCount,
+            patentsLength: result?.patents?.length
         });
-        
+
         res.json({
             success: true,
             ...result
@@ -52,7 +68,7 @@ router.post('/search-registered', async (req, res) => {
 
     } catch (error) {
         console.error('등록특허 검색 오류:', error);
-        
+
         if (process.env.NODE_ENV === 'development') {
             return res.status(500).json({
                 success: false,
@@ -338,6 +354,55 @@ router.post('/send-renewal-request', async (req, res) => {
         res.status(500).json({
             success: false,
             error: '연차료 납부의뢰 전송 중 오류가 발생했습니다.'
+        });
+    }
+});
+
+// 특허 납부 이력 조회 API
+router.post('/get-payment-history', async (req, res) => {
+    try {
+        const { registrationNumber } = req.body;
+
+        if (!registrationNumber) {
+            return res.status(400).json({
+                success: false,
+                error: '등록번호를 입력해주세요.'
+            });
+        }
+
+        // 등록번호 검증 (숫자 형태인지 확인)
+        const cleanedNumber = registrationNumber.trim();
+        if (!cleanedNumber) {
+            return res.status(400).json({
+                success: false,
+                error: '올바른 등록번호를 입력해주세요.'
+            });
+        }
+
+        console.log('🔍 납부 이력 조회 요청:', cleanedNumber);
+
+        // 특허청 등록원부 이력 API 호출
+        const paymentHistory = await patentService.getPatentRegisterHistory(cleanedNumber);
+
+        res.json({
+            success: true,
+            paymentHistory: paymentHistory
+        });
+
+    } catch (error) {
+        console.error('납부 이력 조회 오류:', error);
+
+        if (process.env.NODE_ENV === 'development') {
+            return res.status(500).json({
+                success: false,
+                error: error.message,
+                stack: error.stack
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            error: '납부 이력을 조회하는 중 오류가 발생했습니다.'
         });
     }
 });

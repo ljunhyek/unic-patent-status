@@ -13,34 +13,76 @@ window.itemsPerPage = itemsPerPage;
 // DOM 로드 완료 후 실행
 document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ DOM 로드 완료 - 등록특허 검색 초기화');
-    
+
     // 검색 폼 이벤트 리스너
     const searchForm = document.getElementById('searchForm');
     if (searchForm) {
         searchForm.addEventListener('submit', handleSearch);
         console.log('✅ 검색 폼 이벤트 리스너 등록 완료');
     }
-    
+
+    // 라디오 버튼 이벤트 리스너
+    setupSearchTypeListeners();
+
     // 버튼 이벤트 리스너들
     setupButtonListeners();
 });
+
+// 라디오 버튼 이벤트 리스너 설정
+function setupSearchTypeListeners() {
+    const businessNumberType = document.getElementById('businessNumberType');
+    const customerNumberType = document.getElementById('customerNumberType');
+    const searchInput = document.getElementById('searchInput');
+    const searchInputLabel = document.getElementById('searchInputLabel');
+    const searchInputHint = document.getElementById('searchInputHint');
+
+    function updateInputField() {
+        const selectedType = document.querySelector('input[name="searchType"]:checked').value;
+
+        if (selectedType === '1') { // 사업자번호
+            searchInputLabel.textContent = '사업자번호';
+            searchInput.placeholder = '예: 1234567890';
+            searchInput.maxLength = 10;
+            searchInput.pattern = '[0-9]{10}';
+            searchInputHint.textContent = '10자리 숫자 입력하세요';
+        } else { // 고객번호
+            searchInputLabel.textContent = '고객번호';
+            searchInput.placeholder = '예: 120190612244';
+            searchInput.maxLength = 12;
+            searchInput.pattern = '[0-9]{12}';
+            searchInputHint.textContent = '12자리 숫자 입력하세요';
+        }
+        searchInput.value = ''; // 입력값 초기화
+    }
+
+    businessNumberType.addEventListener('change', updateInputField);
+    customerNumberType.addEventListener('change', updateInputField);
+}
 
 // 검색 처리 함수
 async function handleSearch(e) {
     e.preventDefault();
     console.log('🔍 검색 시작');
-    
-    const customerNumber = document.getElementById('customerNumber').value.trim();
+
+    const searchType = document.querySelector('input[name="searchType"]:checked').value;
+    const searchValue = document.getElementById('searchInput').value.trim();
     const searchBtn = document.getElementById('searchBtn');
     const originalText = searchBtn.innerHTML;
-    
+
     // 입력 검증
-    if (!/^\d{12}$/.test(customerNumber)) {
-        showError('고객번호는 12자리 숫자여야 합니다.');
-        return;
+    if (searchType === '1') { // 사업자번호
+        if (!/^\d{10}$/.test(searchValue)) {
+            showError('사업자번호는 10자리 숫자여야 합니다.');
+            return;
+        }
+    } else { // 고객번호
+        if (!/^\d{12}$/.test(searchValue)) {
+            showError('고객번호는 12자리 숫자여야 합니다.');
+            return;
+        }
     }
-    
-    console.log('📝 고객번호:', customerNumber);
+
+    console.log('📝 검색 유형:', searchType, '검색 값:', searchValue);
     hideError();
     showLoading(searchBtn);
     
@@ -52,7 +94,10 @@ async function handleSearch(e) {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ customerNumber })
+            body: JSON.stringify({
+                searchType: searchType,
+                searchValue: searchValue
+            })
         });
         
         const data = await response.json();
@@ -66,7 +111,12 @@ async function handleSearch(e) {
         displayResults(data);
         console.log('✅ 결과 표시 완료');
 
-        // 등록특허는 특허청 등록원부 API 데이터만 사용 (키프리스 API 호출 안함)
+        // 직전년도 납부정보 조회
+        if (data.patents && data.patents.length > 0) {
+            console.log('💰 직전년도 납부정보 조회 시작');
+            await fetchPaymentHistory(data.patents);
+            console.log('✅ 직전년도 납부정보 조회 완료');
+        }
         
     } catch (error) {
         console.error('❌ 검색 오류:', error);
@@ -332,8 +382,105 @@ function changePage(page) {
     });
 }
 
-// 등록특허는 특허청 등록원부 API 데이터만 사용하므로 상세정보 조회 불필요
-// (fetchPatentDetails, updatePatentTable, showDetailLoadingMessage, hideDetailLoadingMessage 함수 제거됨)
+// 직전년도 납부정보 조회
+async function fetchPaymentHistory(patents) {
+    if (!patents || patents.length === 0) return;
+
+    try {
+        // 등록번호가 있는 특허들만 필터링
+        const registeredPatents = patents.filter(p =>
+            p.registrationNumber &&
+            p.registrationNumber !== '-' &&
+            p.registrationNumber.trim() !== ''
+        );
+
+        if (registeredPatents.length === 0) {
+            console.log('⚠️ 등록번호가 있는 특허가 없습니다.');
+            return;
+        }
+
+        console.log('💰 납부정보 조회 대상:', registeredPatents.length, '건');
+
+        // 각 특허별로 납부정보 조회 (순차적으로 처리)
+        for (let i = 0; i < registeredPatents.length; i++) {
+            const patent = registeredPatents[i];
+
+            try {
+                console.log(`💰 ${i + 1}/${registeredPatents.length} 특허 납부정보 조회:`, patent.registrationNumber);
+
+                const response = await fetch('/api/get-payment-history', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        registrationNumber: patent.registrationNumber
+                    })
+                });
+
+                const paymentData = await response.json();
+
+                if (paymentData.success && paymentData.paymentInfo) {
+                    // 직전년도 납부정보 저장
+                    patent.paymentHistory = paymentData.paymentInfo;
+
+                    // 전역 변수 동기화
+                    const patentIndex = currentPatents.findIndex(p => p.registrationNumber === patent.registrationNumber);
+                    if (patentIndex !== -1) {
+                        currentPatents[patentIndex].paymentHistory = paymentData.paymentInfo;
+                        window.currentPatents[patentIndex].paymentHistory = paymentData.paymentInfo;
+                    }
+
+                    console.log('✅ 납부정보 조회 성공:', patent.registrationNumber, paymentData.paymentInfo);
+                } else {
+                    console.warn('⚠️ 납부정보 조회 실패:', patent.registrationNumber, paymentData.error);
+                }
+
+            } catch (error) {
+                console.error('❌ 개별 납부정보 조회 오류:', patent.registrationNumber, error.message);
+            }
+
+            // API 호출 간격 조절 (과부하 방지)
+            if (i < registeredPatents.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 100)); // 100ms 대기
+            }
+        }
+
+        // 화면 업데이트
+        updatePaymentHistoryDisplay();
+
+    } catch (error) {
+        console.error('❌ 납부정보 조회 전체 오류:', error);
+    }
+}
+
+// 납부정보를 화면에 업데이트
+function updatePaymentHistoryDisplay() {
+    const tableBody = document.getElementById('patentTableBody');
+    const rows = tableBody.getElementsByTagName('tr');
+
+    // 현재 페이지에 표시된 특허들에 대해서만 업데이트
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, currentPatents.length);
+    const paginatedPatents = currentPatents.slice(startIndex, endIndex);
+
+    paginatedPatents.forEach((patent, index) => {
+        if (index >= rows.length) return;
+
+        const row = rows[index];
+        const cells = row.getElementsByTagName('td');
+
+        // 직전년도 납부연월 컬럼 (9번째 컬럼)
+        if (patent.paymentHistory && patent.paymentHistory.payDate !== '-') {
+            const paymentInfo = `${patent.paymentHistory.payDate} (${patent.paymentHistory.lastAnnl} / ${patent.paymentHistory.payAmount})`;
+            cells[9].textContent = paymentInfo;
+        } else {
+            cells[9].textContent = '-';
+        }
+    });
+
+    console.log('✅ 납부정보 화면 업데이트 완료');
+}
 
 // 결과 숨기기
 function hideResults() {

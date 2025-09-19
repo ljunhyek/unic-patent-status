@@ -37,7 +37,7 @@ class PatentService {
     }
 
     // 등록특허 검색 - 특허청 등록원부 API 사용
-    async searchRegisteredPatents(customerNumber) {
+    async searchRegisteredPatents(searchValue, searchType = '2') {
         try {
             // 특허청 등록원부 API 호출
             const url = process.env.PATENT_OFFICE_API_URL || 'https://apis.data.go.kr/1430000/PttRgstRtInfoInqSvc/getBusinessRightList';
@@ -48,7 +48,7 @@ class PatentService {
                 throw new Error('PATENT_OFFICE_API_KEY is required');
             }
 
-            console.log('🌐 특허청 등록원부 API 호출:', { url, customerNumber });
+            console.log('🌐 특허청 등록원부 API 호출:', { url, searchValue, searchType });
 
             const response = await axios.get(url, {
                 params: {
@@ -56,8 +56,8 @@ class PatentService {
                     type: 'json',
                     pageNo: 1,
                     numOfRows: 100, // 최대 100개까지 조회
-                    searchType: 2,   // 특허고객번호 검색
-                    searchVal: customerNumber
+                    searchType: parseInt(searchType), // 1: 사업자번호, 2: 특허고객번호
+                    searchVal: searchValue
                 },
                 httpsAgent: this.httpsAgent, // SSL 인증서 문제 해결
                 timeout: 10000
@@ -148,7 +148,7 @@ class PatentService {
             const rightHolderName = getFirstRightHolder(patents[0]?.rightHolderInfo) || '정보 없음';
 
             return {
-                customerNumber,
+                customerNumber: searchValue,
                 applicantName,
                 rightHolderName,
                 totalCount,
@@ -161,6 +161,71 @@ class PatentService {
                 console.error('API 응답 오류:', error.response.data);
             }
             throw error;
+        }
+    }
+
+    // 직전년도 납부정보 조회 - 특허청 등록원부 이력 API 사용
+    async getPatentRegisterHistory(registrationNumber) {
+        try {
+            const url = 'https://apis.data.go.kr/1430000/PttRgstRtInfoInqSvc/getPatentRegisterHistory';
+            const serviceKey = process.env.PATENT_OFFICE_API_KEY;
+
+            if (!serviceKey) {
+                console.error('⚠️ PATENT_OFFICE_API_KEY가 설정되지 않았습니다.');
+                throw new Error('PATENT_OFFICE_API_KEY is required');
+            }
+
+            console.log('🌐 특허청 등록원부 이력 API 호출:', { url, registrationNumber });
+
+            const response = await axios.get(url, {
+                params: {
+                    serviceKey: serviceKey,
+                    type: 'json', // JSON 형식으로 요청 (요구사항에 따라)
+                    rgstNo: registrationNumber
+                },
+                httpsAgent: this.httpsAgent,
+                timeout: 10000
+            });
+
+            console.log('📡 특허청 이력 API 응답 상태:', response.status);
+
+            // JSON 응답 처리
+            const data = response.data;
+            console.log('📊 JSON 응답 결과:', JSON.stringify(data, null, 2));
+
+            // <pay> 데이터에서 마지막 항목의 연차 정보 추출
+            if (data && data.items && Array.isArray(data.items.pay) && data.items.pay.length > 0) {
+                const lastPayItem = data.items.pay[data.items.pay.length - 1]; // <pay>의 마지막 항목
+
+                return {
+                    lastAnnl: lastPayItem.lastAnnl || '-',
+                    payDate: lastPayItem.payDate || '-',
+                    payAmount: lastPayItem.payAmount || '-'
+                };
+            } else if (data && data.items && data.items.pay) {
+                // <pay>가 단일 객체인 경우
+                const payItem = data.items.pay;
+                return {
+                    lastAnnl: payItem.lastAnnl || '-',
+                    payDate: payItem.payDate || '-',
+                    payAmount: payItem.payAmount || '-'
+                };
+            }
+
+            // 데이터가 없는 경우
+            return {
+                lastAnnl: '-',
+                payDate: '-',
+                payAmount: '-'
+            };
+
+        } catch (error) {
+            console.error('직전년도 납부정보 API 호출 오류:', error.message);
+            return {
+                lastAnnl: '-',
+                payDate: '-',
+                payAmount: '-'
+            };
         }
     }
 
