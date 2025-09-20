@@ -39,7 +39,26 @@ class PatentService {
     // 등록특허 검색 - 특허청 등록원부 API 사용
     async searchRegisteredPatents(searchValue, searchType = '2') {
         try {
-            // 특허청 등록원부 API 호출
+            console.log('🌐 등록특허 검색 요청:', { searchValue, searchType });
+
+            // searchType에 따라 다른 로직 사용
+            if (searchType === '1') {
+                // 사업자번호로 검색
+                return await this.searchByBusinessNumber(searchValue);
+            } else {
+                // 고객번호로 검색 (기존 로직 유지)
+                return await this.searchByCustomerNumber(searchValue);
+            }
+
+        } catch (error) {
+            console.error('등록특허 검색 오류:', error.message);
+            throw error;
+        }
+    }
+
+    // 사업자번호로 등록특허 검색
+    async searchByBusinessNumber(businessNumber) {
+        try {
             const url = process.env.PATENT_OFFICE_API_URL || 'https://apis.data.go.kr/1430000/PttRgstRtInfoInqSvc/getBusinessRightList';
             const serviceKey = process.env.PATENT_OFFICE_API_KEY;
 
@@ -48,24 +67,136 @@ class PatentService {
                 throw new Error('PATENT_OFFICE_API_KEY is required');
             }
 
-            console.log('🌐 특허청 등록원부 API 호출:', { url, searchValue, searchType });
+            console.log('🌐 사업자번호로 특허청 등록원부 API 호출:', { businessNumber });
 
             const response = await axios.get(url, {
                 params: {
                     serviceKey: serviceKey,
                     type: 'json',
                     pageNo: 1,
-                    numOfRows: 100, // 최대 100개까지 조회
-                    searchType: parseInt(searchType), // 1: 사업자번호, 2: 특허고객번호
-                    searchVal: searchValue
+                    numOfRows: 100,
+                    searchType: 1, // 사업자번호
+                    searchVal: businessNumber
                 },
-                httpsAgent: this.httpsAgent, // SSL 인증서 문제 해결
+                httpsAgent: this.httpsAgent,
                 timeout: 10000
             });
 
             console.log('📡 특허청 API 응답 상태:', response.status);
 
-            // 응답 데이터 파싱
+            const data = response.data;
+            console.log('📊 원본 API 응답:', JSON.stringify(data, null, 2));
+
+            // API 응답 구조 확인 및 데이터 추출
+            if (!data || data.resultCode !== '000') {
+                console.log('⚠️ API 응답 오류:', {
+                    resultCode: data?.resultCode,
+                    resultMsg: data?.resultMsg
+                });
+                return {
+                    customerNumber: businessNumber,
+                    applicantName: '정보 없음',
+                    totalCount: 0,
+                    patents: []
+                };
+            }
+
+            // rightList가 없거나 빈 경우 처리
+            if (!data.items || !data.items.rightList) {
+                console.log('⚠️ rightList가 없음');
+                return {
+                    customerNumber: businessNumber,
+                    applicantName: '정보 없음',
+                    totalCount: 0,
+                    patents: []
+                };
+            }
+
+            let rightList = Array.isArray(data.items.rightList) ? data.items.rightList : [data.items.rightList];
+            const totalCount = data.totalCount || rightList.length;
+
+            console.log('🔍 조회된 등록특허 수:', totalCount);
+
+            // 특허 데이터 변환
+            const patents = rightList.map(item => {
+                const getFirstApplicant = (applicantStr) => {
+                    if (!applicantStr || applicantStr === '-') return '-';
+                    return applicantStr.split(',')[0].trim();
+                };
+
+                return {
+                    applicationNumber: item.applNo || '-',
+                    registrationNumber: item.rgstNo || '-',
+                    applicantName: getFirstApplicant(item.applicantInfo) || getFirstApplicant(item.rightHolderInfo) || '-',
+                    applicationDate: this.formatDateFromAPI(item.applDate),
+                    inventionTitle: item.title || '-',
+                    registrationDate: this.formatDateFromAPI(item.rgstDate),
+                    claimCount: item.claimCount || '-',
+                    publicationNumber: item.pubNo || '-',
+                    publicationDate: this.formatDateFromAPI(item.pubDate),
+                    expirationDate: this.formatDateFromAPI(item.cndrtExptnDate),
+                    registrationStatus: item.rgstStatus || '등록',
+                    rightHolderInfo: item.rightHolderInfo || '-',
+                    agentInfo: item.agentInfo || '-',
+                    businessNo: item.businessNo || '-',
+                    examStatus: '등록',
+                    ipcCode: '-',
+                    abstract: '-'
+                };
+            });
+
+            const applicantName = patents[0]?.applicantName || '정보 없음';
+            const getFirstRightHolder = (rightHolderStr) => {
+                if (!rightHolderStr || rightHolderStr === '-') return '정보 없음';
+                return rightHolderStr.split(',')[0].trim();
+            };
+            const rightHolderName = getFirstRightHolder(patents[0]?.rightHolderInfo) || '정보 없음';
+
+            return {
+                customerNumber: businessNumber,
+                applicantName,
+                rightHolderName,
+                totalCount,
+                patents
+            };
+
+        } catch (error) {
+            console.error('사업자번호 검색 오류:', error.message);
+            if (error.response) {
+                console.error('API 응답 오류:', error.response.data);
+            }
+            throw error;
+        }
+    }
+
+    // 고객번호로 등록특허 검색 (기존 로직 유지)
+    async searchByCustomerNumber(customerNumber) {
+        try {
+            const url = process.env.PATENT_OFFICE_API_URL || 'https://apis.data.go.kr/1430000/PttRgstRtInfoInqSvc/getBusinessRightList';
+            const serviceKey = process.env.PATENT_OFFICE_API_KEY;
+
+            if (!serviceKey) {
+                console.error('⚠️ PATENT_OFFICE_API_KEY가 설정되지 않았습니다.');
+                throw new Error('PATENT_OFFICE_API_KEY is required');
+            }
+
+            console.log('🌐 고객번호로 특허청 등록원부 API 호출:', { customerNumber });
+
+            const response = await axios.get(url, {
+                params: {
+                    serviceKey: serviceKey,
+                    type: 'json',
+                    pageNo: 1,
+                    numOfRows: 100,
+                    searchType: 2, // 특허고객번호
+                    searchVal: customerNumber
+                },
+                httpsAgent: this.httpsAgent,
+                timeout: 10000
+            });
+
+            console.log('📡 특허청 API 응답 상태:', response.status);
+
             const data = response.data;
             console.log('📊 원본 API 응답 구조:', JSON.stringify(data, null, 2));
 
@@ -77,7 +208,7 @@ class PatentService {
                     hasItems: !!data?.items
                 });
                 return {
-                    customerNumber,
+                    customerNumber: customerNumber,
                     applicantName: '정보 없음',
                     totalCount: 0,
                     patents: []
@@ -88,17 +219,17 @@ class PatentService {
             if (!data.items.rightList) {
                 console.log('⚠️ rightList가 없음');
                 return {
-                    customerNumber,
+                    customerNumber: customerNumber,
                     applicantName: '정보 없음',
                     totalCount: 0,
                     patents: []
                 };
             }
 
-            const rightList = Array.isArray(data.items.rightList) ? data.items.rightList : [data.items.rightList];
-            const totalCount = parseInt(data.totalCount || data.items.numOfRows || rightList.length);
+            let rightList = Array.isArray(data.items.rightList) ? data.items.rightList : [data.items.rightList];
+            const totalCount = data.totalCount || rightList.length;
 
-            console.log('🔍 조회된 등록특허 수:', totalCount);
+            console.log('🔍 조회된 등록특허 수 (필터링 후):', totalCount);
 
             // 특허 데이터 변환
             const patents = rightList.map(item => {
@@ -148,7 +279,7 @@ class PatentService {
             const rightHolderName = getFirstRightHolder(patents[0]?.rightHolderInfo) || '정보 없음';
 
             return {
-                customerNumber: searchValue,
+                customerNumber: customerNumber,
                 applicantName,
                 rightHolderName,
                 totalCount,
@@ -816,45 +947,47 @@ class PatentService {
     }
 
     // Excel 생성
-    generateExcel(patents, type) {
+    generateExcel(patents, type, searchValue = '') {
         let headers = [];
-        
+
         if (type === 'registered') {
             headers = [
-                '출원번호', '등록번호', '출원인', '발명자', '출원일', 
-                '등록일', '존속기간 만료일', '발명의명칭', '청구항수',
+                '출원번호', '등록번호', '출원인', '출원일',
+                '등록일', '존속기간 만료일', '발명의명칭', '청구항수', '등록상태',
                 '직전년도 납부연월', '해당 연차료 납부마감일', '해당연차수', '해당연차료',
-                '유효/불납', '차기년도 납부의뢰', '추납기간', '회복기간', '특허평가'
+                '유효/불납', '추납기간', '회복기간', '검색번호'
             ];
         } else {
             headers = [
-                '출원번호', '등록번호', '출원인', '발명자', '출원일', 
+                '출원번호', '등록번호', '출원인', '발명자', '출원일',
                 '우선권 출원번호', 'PCT마감일', '발명의 명칭', '의견통지서', '현재상태',
-                '공개전문', '공고전문', 'PCT출원번호', 'Family특허번호'
+                '공개전문', '공고전문', 'PCT출원번호', 'Family특허번호', '검색번호'
             ];
         }
 
         const data = patents.map(p => {
             if (type === 'registered') {
+                // 화면에 표시되는 값들과 동일하게 설정
+                const calculatedData = p.calculatedData || {};
+
                 return [
-                    p.applicationNumber,
-                    p.registrationNumber,
-                    p.applicantName,
-                    p.inventorName,
-                    p.applicationDate,
-                    p.registrationDate,
-                    p.expirationDate,
-                    p.inventionTitle,
-                    p.claimCount,
-                    '-', // 직전년도 납부연월
-                    '-', // 해당 연차료 납부마감일
-                    '-', // 해당연차수
-                    '-', // 해당연차료
-                    '-', // 유효/불납
-                    '-', // 차기년도 납부의뢰
-                    '-', // 추납기간
-                    '-', // 회복기간
-                    '-'  // 특허평가
+                    this.formatApplicationNumberForExcel(p.applicationNumber), // 출원번호 (하이픈 포함)
+                    p.registrationNumber || '-',
+                    p.applicantName || '-',
+                    this.formatDateForExcel(p.applicationDate), // 출원일
+                    this.formatDateForExcel(p.registrationDate), // 등록일
+                    this.formatDateForExcel(p.expirationDate), // 존속기간 만료일
+                    p.inventionTitle || '-',
+                    p.claimCount || '-',
+                    p.registrationStatus || '-',
+                    calculatedData.previousPaymentMonth || '-', // 직전년도 납부연월 (화면과 동일)
+                    calculatedData.dueDate || '-', // 해당 연차료 납부마감일 (화면과 동일)
+                    calculatedData.annualYear || '-', // 해당연차수 (화면과 동일)
+                    calculatedData.annualFee || '-', // 해당연차료 (화면과 동일)
+                    calculatedData.validityStatus || '-', // 유효/불납 (화면과 동일)
+                    calculatedData.latePaymentPeriod || '-', // 추납기간 (화면과 동일)
+                    calculatedData.recoveryPeriod || '-', // 회복기간 (화면과 동일)
+                    searchValue || '-'  // 검색번호 (고객번호 또는 사업자번호)
                 ];
             } else {
                 return [
@@ -862,16 +995,17 @@ class PatentService {
                     p.registrationNumber || '-',
                     p.applicantName,
                     p.inventorName,
-                    p.applicationDate,
+                    this.formatDateForExcel(p.applicationDate), // 출원일
                     p.priorityNumber || '-',
-                    p.pctDeadline || '-',
+                    this.formatDateForExcel(p.pctDeadline), // PCT마감일
                     p.inventionTitle,
-                    p.opinionNotice || '-',
+                    p.opinionNotice || '-', // 의견통지서
                     p.registrationStatus,
                     p.publicationFullText || '-',
                     p.announcementFullText || '-',
                     p.pctApplicationNumber || '-',
-                    p.familyPatentNumber || '-'
+                    p.familyPatentNumber || '-',
+                    searchValue || '-'  // 검색번호 (출원특허도 마지막에 추가)
                 ];
             }
         });
@@ -927,6 +1061,63 @@ class PatentService {
             console.error(`출원번호 ${applicationNumber} 상세 정보 조회 오류:`, error.message);
             throw error;
         }
+    }
+
+    // 출원번호 형식 변환 헬퍼 메서드 (화면 표시용 - 하이픈 포함)
+    formatApplicationNumberForExcel(applicationNumber) {
+        if (!applicationNumber || applicationNumber === '-') return '-';
+
+        // 기존 하이픈이 있는 경우 그대로 반환
+        if (applicationNumber.includes('-')) return applicationNumber;
+
+        // 하이픈이 없는 경우 형식 변환 (1020160042595 -> 10-2016-0042595)
+        if (applicationNumber.length === 13) {
+            return applicationNumber.substring(0, 2) + '-' + applicationNumber.substring(2, 6) + '-' + applicationNumber.substring(6);
+        }
+
+        return applicationNumber;
+    }
+
+    // 엑셀용 날짜 포맷팅 메서드
+    formatDateForExcel(dateStr) {
+        if (!dateStr || dateStr === '-' || dateStr === '' || dateStr === null || dateStr === undefined) {
+            return '-';
+        }
+
+        // 이미 YYYY.MM.DD 형식인 경우 그대로 반환
+        if (typeof dateStr === 'string' && dateStr.match(/^\d{4}\.\d{2}\.\d{2}$/)) {
+            return dateStr;
+        }
+
+        // YYYYMMDD 형식을 YYYY.MM.DD로 변환
+        if (typeof dateStr === 'string' && dateStr.length === 8 && /^\d{8}$/.test(dateStr)) {
+            return `${dateStr.substring(0, 4)}.${dateStr.substring(4, 6)}.${dateStr.substring(6, 8)}`;
+        }
+
+        // YYYY-MM-DD 형식을 YYYY.MM.DD로 변환
+        if (typeof dateStr === 'string' && dateStr.includes('-') && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            return dateStr.replace(/-/g, '.');
+        }
+
+        // Date 객체인 경우 YYYY.MM.DD 형식으로 변환
+        if (dateStr instanceof Date && !isNaN(dateStr.getTime())) {
+            const year = dateStr.getFullYear();
+            const month = String(dateStr.getMonth() + 1).padStart(2, '0');
+            const day = String(dateStr.getDate()).padStart(2, '0');
+            return `${year}.${month}.${day}`;
+        }
+
+        // 그 외의 경우 문자열로 변환해서 처리 시도
+        const str = String(dateStr).trim();
+        if (str && str !== '-' && str !== 'undefined' && str !== 'null') {
+            // 숫자만 있는 8자리 문자열인 경우
+            if (/^\d{8}$/.test(str)) {
+                return `${str.substring(0, 4)}.${str.substring(4, 6)}.${str.substring(6, 8)}`;
+            }
+            return str;
+        }
+
+        return '-';
     }
 }
 

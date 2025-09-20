@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const { patents, type } = req.body;
+        const { patents, type, searchValue } = req.body;
         
         if (!patents || !Array.isArray(patents)) {
             return res.status(400).json({
@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
         }
 
         // Excel 생성
-        const excelBuffer = patentService.generateExcel(patents, type);
+        const excelBuffer = patentService.generateExcel(patents, type, searchValue);
         
         // 파일명 생성 (현재 날짜 포함)
         const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
