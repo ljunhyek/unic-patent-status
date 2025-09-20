@@ -3,7 +3,7 @@ console.log('🔄 등록특허 검색 스크립트 로드됨 - 버전: 2025.09.1
 
 let currentPatents = [];
 let currentPage = 1;
-const itemsPerPage = 5;
+const itemsPerPage = 10;
 
 // 전역 변수로 설정하여 다른 스크립트에서 접근 가능하도록 함
 window.currentPatents = currentPatents;
@@ -134,7 +134,27 @@ async function handleSearch(e) {
 // 결과 표시 함수
 function displayResults(data) {
     console.log('📋 결과 표시 중...', data);
-    currentPatents = data.patents || [];
+
+    // 모든 데이터를 가져온 후 화면 표시시에만 필터링
+    const allPatents = data.patents || [];
+
+    // 등록번호가 30 또는 40으로 시작하는 항목 제외
+    const filteredPatents = allPatents.filter(patent => {
+        const registrationNumber = patent.registrationNumber || '';
+        const cleanedRgstNo = registrationNumber.replace(/-/g, '');
+        const firstTwo = cleanedRgstNo.substring(0, 2);
+        const shouldExclude = firstTwo === '30' || firstTwo === '40';
+
+        if (shouldExclude) {
+            console.log(`🚫 화면 표시에서 제외: ${registrationNumber} (${firstTwo}로 시작)`);
+        }
+
+        return !shouldExclude;
+    });
+
+    console.log(`📊 필터링 결과: 전체 ${allPatents.length}건 중 ${filteredPatents.length}건 표시`);
+
+    currentPatents = filteredPatents;
     window.currentPatents = currentPatents;
     currentPage = 1; // 검색 시 첫 페이지로 초기화
     window.currentPage = currentPage; // 전역변수 동기화
@@ -147,11 +167,28 @@ function displayResults(data) {
     });
     
     document.getElementById('resultCurrentDate').textContent = currentDate;
-    document.getElementById('resultCustomerNumber').textContent = data.customerNumber;
-    // rightHolderName이 있으면 사용하고, 없으면 applicantName 사용
+
+    // 검색 유형에 따라 권리자명 표시 방식 결정
+    const searchType = document.querySelector('input[name="searchType"]:checked').value;
     const rightHolderToDisplay = data.rightHolderName || data.applicantName || '정보 없음';
-    document.getElementById('resultRightHolderName').textContent = rightHolderToDisplay;
-    document.getElementById('resultTotalCount').textContent = data.totalCount;
+
+    let displayText = rightHolderToDisplay;
+
+    if (searchType === '1') {
+        // 사업자번호로 검색한 경우: 권리자명 (고객번호: xxx)
+        if (data.patents && data.patents.length > 0 && data.patents[0].applicantCd) {
+            displayText = `${rightHolderToDisplay} (고객번호: ${data.patents[0].applicantCd})`;
+        }
+    } else {
+        // 고객번호로 검색한 경우: 권리자명 (사업자번호: xxx)
+        if (data.patents && data.patents.length > 0 && data.patents[0].businessNo) {
+            displayText = `${rightHolderToDisplay} (사업자번호: ${data.patents[0].businessNo})`;
+        }
+    }
+
+    document.getElementById('resultRightHolderName').textContent = displayText;
+    // 필터링된 건수로 표시 (30, 40으로 시작하는 등록번호 제외 후)
+    document.getElementById('resultTotalCount').textContent = filteredPatents.length;
     
     const resultsSection = document.getElementById('resultsSection');
     
@@ -174,7 +211,7 @@ function displayPaginatedResults() {
     console.log('   동기화 전 - currentPatents.length:', currentPatents.length);
     console.log('   동기화 전 - window.currentPatents.length:', window.currentPatents ? window.currentPatents.length : 'undefined');
     console.log('   동기화 전 - currentPatents === window.currentPatents:', currentPatents === window.currentPatents);
-    
+
     // 강화된 전역변수와 로컬변수 동기화
     if (window.currentPatents && window.currentPatents.length > 0) {
         currentPatents = window.currentPatents;
@@ -186,6 +223,7 @@ function displayPaginatedResults() {
         console.error('   ❌ 두 변수 모두 비어있음');
         return;
     }
+
     
     console.log('   동기화 후 - currentPatents.length:', currentPatents.length);
     console.log('   동기화 후 - window.currentPatents.length:', window.currentPatents.length);
@@ -241,7 +279,6 @@ function displayPaginatedResults() {
                 '<td>' + (calculatedData.annualYear || '-') + '</td>',
                 '<td>' + (calculatedData.annualFee || '-') + '</td>',
                 '<td>' + (calculatedData.validityStatus || '-') + '</td>',
-                '<td>' + (calculatedData.paymentStatus || '-') + '</td>',
                 '<td>' + (calculatedData.latePaymentPeriod || '-') + '</td>',
                 '<td>' + (calculatedData.recoveryPeriod || '-') + '</td>'
             ];
@@ -253,7 +290,7 @@ function displayPaginatedResults() {
         } else {
             annualFeeColumns = [
                 '<td>-</td>', '<td>-</td>', '<td>-</td>', '<td>-</td>',
-                '<td>-</td>', '<td>-</td>', '<td>-</td>', '<td>-</td>'
+                '<td>-</td>', '<td>-</td>', '<td>-</td>'
             ];
             console.log('⚠️ 페이지네이션 - 계산된 데이터 없음 (페이지 ' + currentPage + '):', patent.applicationNumber);
         }
@@ -555,9 +592,23 @@ function requestRenewalFee() {
         return;
     }
     
-    // 고객번호와 첫 번째 출원인 이름 가져오기
-    const customerNumber = document.getElementById('resultCustomerNumber').textContent;
-    const applicantName = document.getElementById('resultApplicantName').textContent;
+    // 고객번호는 검색 입력값에서, 출원인 이름은 권리자명에서 가져오기
+    const searchType = document.querySelector('input[name="searchType"]:checked').value;
+    let customerNumber = '';
+
+    if (searchType === '2') {
+        // 고객번호로 검색한 경우
+        customerNumber = document.getElementById('searchInput').value.trim();
+    } else {
+        // 사업자번호로 검색한 경우, 첫 번째 특허의 고객번호 사용
+        if (currentPatents.length > 0 && currentPatents[0].applicantCd) {
+            customerNumber = currentPatents[0].applicantCd;
+        }
+    }
+
+    const rightHolderName = document.getElementById('resultRightHolderName').textContent;
+    // 괄호 안의 정보 제거하여 순수한 이름만 추출
+    const applicantName = rightHolderName.replace(/\s*\([^)]*\)\s*/g, '').trim();
     
     console.log('고객정보:', { customerNumber, applicantName });
     
@@ -696,8 +747,12 @@ function setupButtonListeners() {
                 showError('다운로드할 데이터가 없습니다.');
                 return;
             }
+
+            // 검색에 사용된 번호 가져오기
+            const searchValue = document.getElementById('searchInput').value.trim();
+
             if (typeof downloadExcel === 'function') {
-                downloadExcel(currentPatents, 'registered');
+                downloadExcel(currentPatents, 'registered', searchValue);
             } else {
                 console.warn('엑셀 다운로드 함수를 찾을 수 없습니다.');
             }
