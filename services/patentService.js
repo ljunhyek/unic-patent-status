@@ -452,7 +452,7 @@ class PatentService {
                             inventionTitle: detailInfo?.inventionTitle || basicPatent.inventionTitle,
                             
                             // 서지상세정보에서 가져온 추가 정보
-                            priorityNumber: detailInfo?.priorityNumber || '-',
+                            priorityApplicationDate: detailInfo?.priorityApplicationDate || '-',
                             pctDeadline: this.formatDate(detailInfo?.pctDeadline) || '-',
                             currentStatus: detailInfo?.currentStatus || basicPatent.registrationStatus || '심사중',
 
@@ -470,7 +470,7 @@ class PatentService {
                         // 오류가 있어도 기본 정보는 반환
                         return {
                             ...basicPatent,
-                            priorityNumber: '-',
+                            priorityApplicationDate: '-',
                             pctDeadline: '-',
                             currentStatus: basicPatent.registrationStatus || '심사중',
                             publicationFullText: '-',
@@ -597,7 +597,7 @@ class PatentService {
             ipcCode: this.getValue(item.ipcCode),
             abstract: this.getValue(item.abstract),
             // 새로운 필드들 추가
-            priorityNumber: this.getValue(item.priorityNumber),
+            priorityApplicationDate: this.getValue(item.priorityApplicationDate),
             pctDeadline: this.formatDate(this.getValue(item.pctDeadline)),
             publicationFullText: this.getValue(item.publicationFullText),
             announcementFullText: this.getValue(item.announcementFullText),
@@ -706,12 +706,19 @@ class PatentService {
                                 const biblioInfo = item.biblioSummaryInfoArray?.biblioSummaryInfo || {};
                                 const inventorInfo = item.inventorInfoArray?.inventorInfo || {};
                                 const applicantInfo = item.applicantInfoArray?.applicantInfo || {};
-                                
+                                const priorityInfoArray = item.priorityInfoArray?.priorityInfo || [];
+
+                                // 우선일 정보 추출 (첫 번째 우선일 사용)
+                                const priorityApplicationDate = Array.isArray(priorityInfoArray) && priorityInfoArray.length > 0
+                                    ? this.getValue(priorityInfoArray[0].priorityApplicationDate)
+                                    : this.getValue(priorityInfoArray?.priorityApplicationDate);
+
                                 console.log(`🎯 상세 정보 추출 성공 (${applicationNumber}):`, {
                                     claimCount: biblioInfo.claimCount,
                                     inventorName: inventorInfo.name,
                                     registerNumber: biblioInfo.registerNumber,
-                                    registerDate: biblioInfo.registerDate
+                                    registerDate: biblioInfo.registerDate,
+                                    priorityApplicationDate: priorityApplicationDate
                                 });
 
                                 const detailInfo = {
@@ -723,20 +730,23 @@ class PatentService {
                                     registrationDate: this.formatDate(this.getValue(biblioInfo.registerDate)),
                                     inventionTitle: this.getValue(biblioInfo.inventionTitle),
                                     claimCount: this.getValue(biblioInfo.claimCount),
-                                    
+
+                                    // 우선일 정보 추가
+                                    priorityApplicationDate: this.formatDate(priorityApplicationDate) || '-',
+
                                     // 추가 정보
                                     publicationDate: this.formatDate(this.getValue(biblioInfo.publicationDate)),
                                     openDate: this.formatDate(this.getValue(biblioInfo.openDate)),
                                     registrationStatus: this.getValue(biblioInfo.registerStatus) || '등록',
                                     examinerName: this.getValue(biblioInfo.examinerName),
                                     finalDisposal: this.getValue(biblioInfo.finalDisposal),
-                                    
+
                                     // IPC 코드 추출
                                     ipcCode: this.extractIpcCodes(item.ipcInfoArray),
-                                    
+
                                     // 권리 존속 기간 계산 (등록일 + 20년)
                                     expirationDate: this.calculateExpirationDate(biblioInfo.applicationDate),
-                                    
+
                                     // 법적 상태 정보
                                     legalStatusInfo: item.legalStatusInfoArray?.legalStatusInfo || []
                                 };
@@ -911,7 +921,7 @@ class PatentService {
                     p.applicantName,
                     p.inventorName,
                     p.applicationDate,
-                    p.priorityNumber || '-',
+                    p.priorityApplicationDate || '-',
                     p.pctDeadline || '-',
                     `"${p.inventionTitle}"`,
                     p.registrationStatus,
@@ -980,7 +990,7 @@ class PatentService {
                     p.applicantName,
                     p.inventorName,
                     this.formatDateForExcel(p.applicationDate), // 출원일
-                    p.priorityNumber || '-',
+                    p.priorityApplicationDate || '-',
                     this.formatDateForExcel(p.pctDeadline), // PCT마감일
                     p.inventionTitle,
                     p.registrationStatus,
