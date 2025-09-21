@@ -77,7 +77,6 @@
                             <th>현재상태</th>
                             <th>공개전문</th>
                             <th>공고전문</th>
-                            <th>PCT출원번호</th>
                         </tr>
                     </thead>
                     <tbody id="patentTableBody">
@@ -205,7 +204,6 @@ function displayPaginatedResults() {
             <td>${safeValue(patent.currentStatus) || '심사중'}</td>
             <td>${createFileLink(patent.publicationFullText, patent.publicationDocName, '공개전문')}</td>
             <td>${createFileLink(patent.announcementFullText, patent.announcementDocName, '공고전문')}</td>
-            <td>${safeValue(patent.pctApplicationNumber)}</td>
         `;
         tableBody.appendChild(row);
     });
@@ -330,19 +328,44 @@ function createFileLink(filePath, docName, linkText) {
     if (!filePath || filePath === '-' || filePath.trim() === '') {
         return `<span class="no-file">-</span>`;
     }
-    
+
     // URL이 유효한지 확인
     try {
         const url = new URL(filePath);
         const displayName = docName && docName !== '-' ? docName : linkText;
-        
-        return `<a href="${filePath}" target="_blank" class="file-link" title="${displayName}">
+
+        return `<a href="${filePath}" target="_blank" class="file-link"
+                   title="클릭: 새창 열기 | 더블클릭: 다운로드"
+                   ondblclick="downloadFile('${filePath}', '${displayName}'); event.preventDefault();">
                     <span class="file-icon">📄</span> ${linkText}
                 </a>`;
     } catch (e) {
         // URL이 유효하지 않은 경우
         console.warn('유효하지 않은 파일 URL:', filePath);
         return `<span class="invalid-file" title="파일 URL이 유효하지 않습니다">❌ ${linkText}</span>`;
+    }
+}
+
+// 파일 다운로드 함수
+function downloadFile(fileUrl, fileName) {
+    try {
+        console.log('📥 파일 다운로드 시작:', { fileUrl, fileName });
+
+        // 임시 링크 생성
+        const link = document.createElement('a');
+        link.href = fileUrl;
+        link.download = fileName || '특허문서';
+        link.target = '_blank';
+
+        // 브라우저에 따른 다운로드 처리
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        console.log('✅ 파일 다운로드 완료');
+    } catch (error) {
+        console.error('❌ 파일 다운로드 실패:', error);
+        showError('파일 다운로드에 실패했습니다: ' + error.message);
     }
 }
 
