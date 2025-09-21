@@ -71,15 +71,13 @@
                             <th>출원인</th>
                             <th>발명자</th>
                             <th>출원일</th>
-                            <th>우선권 출원번호</th>
+                            <th>우선일</th>
                             <th>PCT마감일</th>
                             <th>발명의 명칭</th>
-                            <th>의견통지서</th>
                             <th>현재상태</th>
                             <th>공개전문</th>
                             <th>공고전문</th>
                             <th>PCT출원번호</th>
-                            <th>Family특허번호</th>
                         </tr>
                     </thead>
                     <tbody id="patentTableBody">
@@ -204,12 +202,10 @@ function displayPaginatedResults() {
             <td>${safeValue(patent.priorityNumber)}</td>
             <td>${formatDate(patent.pctDeadline) || '-'}</td>
             <td class="invention-title-natural invention-title">${inventionTitle}</td>
-            <td>${safeValue(patent.opinionNotice)}</td>
             <td>${safeValue(patent.currentStatus) || '심사중'}</td>
             <td>${createFileLink(patent.publicationFullText, patent.publicationDocName, '공개전문')}</td>
             <td>${createFileLink(patent.announcementFullText, patent.announcementDocName, '공고전문')}</td>
             <td>${safeValue(patent.pctApplicationNumber)}</td>
-            <td>${safeValue(patent.familyPatentNumber)}</td>
         `;
         tableBody.appendChild(row);
     });

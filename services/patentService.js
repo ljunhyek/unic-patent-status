@@ -139,6 +139,7 @@ class PatentService {
                     rightHolderInfo: item.rightHolderInfo || '-',
                     agentInfo: item.agentInfo || '-',
                     businessNo: item.businessNo || '-',
+                    applicantCd: item.applicantCd || '-', // 고객번호 추가
                     examStatus: '등록',
                     ipcCode: '-',
                     abstract: '-'
@@ -261,6 +262,7 @@ class PatentService {
                     rightHolderInfo: item.rightHolderInfo || '-',
                     agentInfo: item.agentInfo || '-',
                     businessNo: item.businessNo || '-',
+                    applicantCd: item.applicantCd || '-', // 고객번호 추가
 
                     // UI에 필요한 추가 필드들 (연차료 계산용)
                     examStatus: '등록',
@@ -452,18 +454,16 @@ class PatentService {
                             // 서지상세정보에서 가져온 추가 정보
                             priorityNumber: detailInfo?.priorityNumber || '-',
                             pctDeadline: this.formatDate(detailInfo?.pctDeadline) || '-',
-                            opinionNotice: this.extractOpinionNotice(detailInfo?.legalStatusInfo) || '-',
                             currentStatus: detailInfo?.currentStatus || basicPatent.registrationStatus || '심사중',
-                            
+
                             // 공개전문/공고전문 URL
                             publicationFullText: pubFullText?.path || '-',
                             publicationDocName: pubFullText?.docName || '-',
                             announcementFullText: annFullText?.path || '-',
                             announcementDocName: annFullText?.docName || '-',
-                            
-                            // PCT 출원번호, Family 특허번호 (API 응답에 따라 추가)
-                            pctApplicationNumber: detailInfo?.pctApplicationNumber || '-',
-                            familyPatentNumber: detailInfo?.familyPatentNumber || '-'
+
+                            // PCT 출원번호
+                            pctApplicationNumber: detailInfo?.pctApplicationNumber || '-'
                         };
                     } catch (error) {
                         console.error(`출원번호 ${basicPatent.applicationNumber} 상세 정보 조회 실패:`, error.message);
@@ -472,14 +472,12 @@ class PatentService {
                             ...basicPatent,
                             priorityNumber: '-',
                             pctDeadline: '-',
-                            opinionNotice: '-',
                             currentStatus: basicPatent.registrationStatus || '심사중',
                             publicationFullText: '-',
                             publicationDocName: '-',
                             announcementFullText: '-',
                             announcementDocName: '-',
-                            pctApplicationNumber: '-',
-                            familyPatentNumber: '-'
+                            pctApplicationNumber: '-'
                         };
                     }
                 })
@@ -498,16 +496,6 @@ class PatentService {
         }
     }
 
-    // 의견통지서 정보 추출 (legalStatusInfo에서)
-    extractOpinionNotice(legalStatusInfo) {
-        if (!legalStatusInfo || !Array.isArray(legalStatusInfo)) return '-';
-        
-        const opinionNotice = legalStatusInfo.find(info => 
-            info.documentName && info.documentName.includes('의견제출통지서')
-        );
-        
-        return opinionNotice ? this.formatDate(opinionNotice.receiptDate) : '-';
-    }
 
     // API 응답 파싱
     async parseResponse(data) {
@@ -611,11 +599,9 @@ class PatentService {
             // 새로운 필드들 추가
             priorityNumber: this.getValue(item.priorityNumber),
             pctDeadline: this.formatDate(this.getValue(item.pctDeadline)),
-            opinionNotice: this.getValue(item.opinionNotice),
             publicationFullText: this.getValue(item.publicationFullText),
             announcementFullText: this.getValue(item.announcementFullText),
-            pctApplicationNumber: this.getValue(item.pctApplicationNumber),
-            familyPatentNumber: this.getValue(item.familyPatentNumber)
+            pctApplicationNumber: this.getValue(item.pctApplicationNumber)
         };
     }
 
@@ -890,9 +876,9 @@ class PatentService {
             ];
         } else {
             headers = [
-                '출원번호', '등록번호', '출원인', '발명자', '출원일', 
-                '우선권 출원번호', 'PCT마감일', '발명의 명칭', '의견통지서', '현재상태',
-                '공개전문', '공고전문', 'PCT출원번호', 'Family특허번호'
+                '출원번호', '등록번호', '출원인', '발명자', '출원일',
+                '우선일', 'PCT마감일', '발명의 명칭', '현재상태',
+                '공개전문', '공고전문', 'PCT출원번호'
             ];
         }
 
@@ -928,12 +914,10 @@ class PatentService {
                     p.priorityNumber || '-',
                     p.pctDeadline || '-',
                     `"${p.inventionTitle}"`,
-                    p.opinionNotice || '-',
                     p.registrationStatus,
                     p.publicationFullText || '-',
                     p.announcementFullText || '-',
-                    p.pctApplicationNumber || '-',
-                    p.familyPatentNumber || '-'
+                    p.pctApplicationNumber || '-'
                 ];
             }
         });
@@ -960,8 +944,8 @@ class PatentService {
         } else {
             headers = [
                 '출원번호', '등록번호', '출원인', '발명자', '출원일',
-                '우선권 출원번호', 'PCT마감일', '발명의 명칭', '의견통지서', '현재상태',
-                '공개전문', '공고전문', 'PCT출원번호', 'Family특허번호', '검색번호'
+                '우선일', 'PCT마감일', '발명의 명칭', '현재상태',
+                '공개전문', '공고전문', 'PCT출원번호', '검색번호'
             ];
         }
 
@@ -999,12 +983,10 @@ class PatentService {
                     p.priorityNumber || '-',
                     this.formatDateForExcel(p.pctDeadline), // PCT마감일
                     p.inventionTitle,
-                    p.opinionNotice || '-', // 의견통지서
                     p.registrationStatus,
                     p.publicationFullText || '-',
                     p.announcementFullText || '-',
                     p.pctApplicationNumber || '-',
-                    p.familyPatentNumber || '-',
                     searchValue || '-'  // 검색번호 (출원특허도 마지막에 추가)
                 ];
             }
