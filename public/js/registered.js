@@ -295,7 +295,8 @@ function displayPaginatedResults() {
             console.log('⚠️ 페이지네이션 - 계산된 데이터 없음 (페이지 ' + currentPage + '):', patent.applicationNumber);
         }
         
-        row.innerHTML = [
+        // 테이블 행 생성 - 기본 컬럼들
+        const baseCells = [
             '<td class="patent-number">' + formatApplicationNumber(safeValue(patent.applicationNumber)) + '</td>',
             '<td class="patent-number">' + safeValue(patent.registrationNumber) + '</td>',
             '<td class="applicant-name-clean applicant-name">' + applicantName + '</td>',
@@ -305,7 +306,48 @@ function displayPaginatedResults() {
             '<td class="invention-title-natural invention-title">' + inventionTitle + '</td>',
             '<td>' + safeValue(patent.claimCount) + '</td>',
             '<td>' + safeValue(patent.registrationStatus) + '</td>'
-        ].concat(annualFeeColumns).join('');
+        ];
+
+        // calculatedData가 있는 경우 특별한 스타일 적용
+        if (calculatedData) {
+            // 정상납부/미납 컬럼 처리
+            let validityCell;
+            if (calculatedData.validityStatus === '미납') {
+                validityCell = '<td style="color: red; font-weight: bold;">미납</td>';
+            } else if (calculatedData.validityStatus === '정상납부') {
+                validityCell = '<td>정상납부</td>';
+            } else {
+                validityCell = '<td>' + (calculatedData.validityStatus || '-') + '</td>';
+            }
+
+            // 추납기간 마감일 처리
+            let latePaymentCell;
+            if (calculatedData.latePaymentPeriod && calculatedData.latePaymentPeriod !== '-') {
+                latePaymentCell = '<td style="color: red; font-weight: bold;">' + calculatedData.latePaymentPeriod + '</td>';
+            } else {
+                latePaymentCell = '<td>' + (calculatedData.latePaymentPeriod || '-') + '</td>';
+            }
+
+            // 회복기간 마감일 처리
+            let recoveryCell;
+            if (calculatedData.recoveryPeriod && calculatedData.recoveryPeriod !== '-') {
+                recoveryCell = '<td style="color: red; font-weight: bold;">' + calculatedData.recoveryPeriod + '</td>';
+            } else {
+                recoveryCell = '<td>' + (calculatedData.recoveryPeriod || '-') + '</td>';
+            }
+
+            annualFeeColumns = [
+                '<td>' + (calculatedData.previousPaymentMonth || '') + '</td>',
+                '<td>' + (calculatedData.dueDate || '-') + '</td>',
+                '<td>' + (calculatedData.annualYear || '-') + '</td>',
+                '<td>' + (calculatedData.annualFee || '-') + '</td>',
+                validityCell,
+                latePaymentCell,
+                recoveryCell
+            ];
+        }
+
+        row.innerHTML = baseCells.concat(annualFeeColumns).join('');
         
         tableBody.appendChild(row);
     });

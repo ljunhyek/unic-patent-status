@@ -99,9 +99,9 @@
                             <th>해당 연차료 납부마감일</th>
                             <th>해당연차수</th>
                             <th>해당연차료</th>
-                            <th>유효/불납</th>
-                            <th>추납기간</th>
-                            <th>회복기간</th>
+                            <th>정상납부/미납</th>
+                            <th>추납기간 마감</th>
+                            <th>회복기간 마감</th>
                         </tr>
                     </thead>
                     <tbody id="patentTableBody">
@@ -461,7 +461,7 @@ function performNewAnnuityCalculation(discountType) {
                 // - 추납기간, 회복기간: 해당 연차료 납부마감일 기준 계산
                 
                 // 4년차 연차료 계산
-                const fourthYearCalculation = calculateNewAnnuityFee(4, patent.claimCount || 1, discountType, "유효", null, null);
+                const fourthYearCalculation = calculateNewAnnuityFee(4, patent.claimCount || 1, discountType, "정상납부", null, null);
 
                 // 납부 마감일 계산
                 const dueDateStr = (parseInt(patent.registrationDate.substring(0, 4)) + 3) + patent.registrationDate.substring(4);
@@ -481,19 +481,14 @@ function performNewAnnuityCalculation(discountType) {
                     const recoveryEnd = new Date(dueDate);
                     recoveryEnd.setMonth(recoveryEnd.getMonth() + 9);
 
-                    // 추납기간 표시
-                    if (today <= latePaymentEnd) {
-                        latePaymentPeriod = latePaymentEnd.getFullYear() + '.' +
-                                           String(latePaymentEnd.getMonth() + 1).padStart(2, '0') + '.' +
-                                           String(latePaymentEnd.getDate()).padStart(2, '0');
-                    }
+                    // 추납기간과 회복기간 마감일 모두 표시
+                    latePaymentPeriod = latePaymentEnd.getFullYear() + '.' +
+                                       String(latePaymentEnd.getMonth() + 1).padStart(2, '0') + '.' +
+                                       String(latePaymentEnd.getDate()).padStart(2, '0');
 
-                    // 회복기간 표시
-                    if (today > latePaymentEnd && today <= recoveryEnd) {
-                        recoveryPeriod = recoveryEnd.getFullYear() + '.' +
-                                       String(recoveryEnd.getMonth() + 1).padStart(2, '0') + '.' +
-                                       String(recoveryEnd.getDate()).padStart(2, '0');
-                    }
+                    recoveryPeriod = recoveryEnd.getFullYear() + '.' +
+                                   String(recoveryEnd.getMonth() + 1).padStart(2, '0') + '.' +
+                                   String(recoveryEnd.getDate()).padStart(2, '0');
                 }
 
                 // 계산된 데이터를 특허 객체에 저장
@@ -507,7 +502,7 @@ function performNewAnnuityCalculation(discountType) {
                     dueDate: dueDateStr, // 해당 연차료 납부마감일
                     annualYear: '4년차',
                     annualFee: fourthYearCalculation.totalFee.toLocaleString() + '원',
-                    validityStatus: '유효',
+                    validityStatus: '정상납부',
                     latePaymentPeriod: latePaymentPeriod,
                     recoveryPeriod: recoveryPeriod
                 };
@@ -528,9 +523,26 @@ function performNewAnnuityCalculation(discountType) {
                     cells[10].textContent = patent.calculatedData.dueDate; // 해당 연차료 납부마감일
                     cells[11].textContent = patent.calculatedData.annualYear; // 해당연차수
                     cells[12].textContent = patent.calculatedData.annualFee; // 해당연차료
-                    cells[13].textContent = patent.calculatedData.validityStatus; // 유효/불납
-                    cells[14].textContent = patent.calculatedData.latePaymentPeriod; // 추납기간
-                    cells[15].textContent = patent.calculatedData.recoveryPeriod; // 회복기간
+
+                    // 정상납부/미납 상태 표시
+                    cells[13].textContent = patent.calculatedData.validityStatus;
+                    cells[13].className = ''; // 유효 상태는 특별한 스타일 없음
+
+                    // 추납기간 마감일 (빨간색 표시)
+                    cells[14].textContent = patent.calculatedData.latePaymentPeriod;
+                    if (patent.calculatedData.latePaymentPeriod !== '-') {
+                        cells[14].className = 'deadline-danger';
+                    } else {
+                        cells[14].className = '';
+                    }
+
+                    // 회복기간 마감일 (빨간색 표시)
+                    cells[15].textContent = patent.calculatedData.recoveryPeriod;
+                    if (patent.calculatedData.recoveryPeriod !== '-') {
+                        cells[15].className = 'deadline-danger';
+                    } else {
+                        cells[15].className = '';
+                    }
                 }
                 continue;
             }
@@ -539,8 +551,32 @@ function performNewAnnuityCalculation(discountType) {
             const annualYear = Math.floor((today.getTime() - threeYearsAfterRegistration.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) + 4;
             
             // 다음 연차수 계산 (1년 앞서서 납부하는 개념)
-            const nextYear = annualYear + 1;
-            
+            let nextYear = annualYear + 1;
+
+            // 미납 상태 확인 로직 추가
+            let isUnpaid = false;
+            let adjustedNextYear = nextYear;
+
+            // 납부 이력이 있는 경우 미납 여부 확인
+            if (patent.paymentHistory && patent.paymentHistory.lastAnnl && patent.paymentHistory.lastAnnl !== '-') {
+                const lastPaidYear = parseInt(patent.paymentHistory.lastAnnl);
+
+                // 해당연차수 - 직전년도 연차수 = 2 이면 미납 상태
+                if (nextYear - lastPaidYear === 2) {
+                    isUnpaid = true;
+                    adjustedNextYear = nextYear - 1; // 해당연차수 조정
+                    console.log('⚠️ 미납 감지:', {
+                        applicationNumber: patent.applicationNumber,
+                        원래해당연차수: nextYear,
+                        직전년도연차수: lastPaidYear,
+                        조정된해당연차수: adjustedNextYear
+                    });
+                }
+            }
+
+            // 조정된 연차수로 업데이트
+            nextYear = adjustedNextYear;
+
             // 연차수가 25년을 초과하면 특허 만료
             if (nextYear > 25) {
                 patent.calculatedData = {
@@ -571,46 +607,40 @@ function performNewAnnuityCalculation(discountType) {
             }
             
             // 다음 연차 정보 계산 (해당연차수/해당연차료에 표시할 정보)
-            const nextCalculation = calculateNewAnnuityFee(nextYear, patent.claimCount || 1, discountType, "유효", null, null);
+            const nextCalculation = calculateNewAnnuityFee(nextYear, patent.claimCount || 1, discountType, "정상납부", null, null);
 
             // 임시값 설정
-            const nextStatus = "유효";
+            const nextStatus = "정상납부";
 
             // 납부 마감일 계산
             const dueDateStr = (parseInt(patent.registrationDate.substring(0, 4)) + nextYear - 1) + patent.registrationDate.substring(4);
             const dueDate = new Date(dueDateStr.substring(0, 4) + '-' + dueDateStr.substring(5, 7) + '-' + dueDateStr.substring(8, 10));
 
-            // 추납기간과 회복기간 계산
+            // 추납기간과 회복기간 계산 - 항상 마감일 표시
             let latePaymentPeriod = '-';
             let recoveryPeriod = '-';
 
-            // 현재 날짜가 납부 마감일을 지난 경우에만 계산
+            // 추납기간: 납부 마감일 + 6개월
+            const latePaymentEnd = new Date(dueDate);
+            latePaymentEnd.setMonth(latePaymentEnd.getMonth() + 6);
+
+            // 회복기간: 납부 마감일 + 9개월 (추납기간 + 3개월)
+            const recoveryEnd = new Date(dueDate);
+            recoveryEnd.setMonth(recoveryEnd.getMonth() + 9);
+
+            // 추납기간 마감일 표시 (납부 마감일이 지난 경우 항상 표시)
             if (today > dueDate) {
-                // 추납기간: 납부 마감일 + 6개월
-                const latePaymentEnd = new Date(dueDate);
-                latePaymentEnd.setMonth(latePaymentEnd.getMonth() + 6);
+                latePaymentPeriod = latePaymentEnd.getFullYear() + '.' +
+                                   String(latePaymentEnd.getMonth() + 1).padStart(2, '0') + '.' +
+                                   String(latePaymentEnd.getDate()).padStart(2, '0');
 
-                // 회복기간: 납부 마감일 + 9개월 (추납기간 + 3개월)
-                const recoveryEnd = new Date(dueDate);
-                recoveryEnd.setMonth(recoveryEnd.getMonth() + 9);
-
-                // 추납기간 표시
-                if (today <= latePaymentEnd) {
-                    latePaymentPeriod = latePaymentEnd.getFullYear() + '.' +
-                                       String(latePaymentEnd.getMonth() + 1).padStart(2, '0') + '.' +
-                                       String(latePaymentEnd.getDate()).padStart(2, '0');
-                }
-
-                // 회복기간 표시
-                if (today > latePaymentEnd && today <= recoveryEnd) {
-                    recoveryPeriod = recoveryEnd.getFullYear() + '.' +
-                                   String(recoveryEnd.getMonth() + 1).padStart(2, '0') + '.' +
-                                   String(recoveryEnd.getDate()).padStart(2, '0');
-                }
+                recoveryPeriod = recoveryEnd.getFullYear() + '.' +
+                               String(recoveryEnd.getMonth() + 1).padStart(2, '0') + '.' +
+                               String(recoveryEnd.getDate()).padStart(2, '0');
             }
 
             // 정상납부/미납 상태 결정
-            let paymentStatus = "정상납부";
+            let paymentStatus = isUnpaid ? "미납" : "정상납부";
 
             // 계산된 데이터를 특허 객체에 저장
             patent.calculatedData = {
@@ -623,7 +653,7 @@ function performNewAnnuityCalculation(discountType) {
                 dueDate: dueDateStr,  // 해당 연차료 납부마감일
                 annualYear: nextYear + '년차',
                 annualFee: nextCalculation.totalFee.toLocaleString() + '원',
-                validityStatus: nextStatus,  // 다음 연차의 상태
+                validityStatus: paymentStatus,  // 미납 또는 유효 상태
                 latePaymentPeriod: latePaymentPeriod,
                 recoveryPeriod: recoveryPeriod
             };
@@ -643,9 +673,30 @@ function performNewAnnuityCalculation(discountType) {
                 cells[10].textContent = patent.calculatedData.dueDate; // 해당 연차료 납부마감일
                 cells[11].textContent = patent.calculatedData.annualYear; // 해당연차수
                 cells[12].textContent = patent.calculatedData.annualFee; // 해당연차료
-                cells[13].textContent = patent.calculatedData.validityStatus; // 유효/불납
-                cells[14].textContent = patent.calculatedData.latePaymentPeriod; // 추납기간
-                cells[15].textContent = patent.calculatedData.recoveryPeriod; // 회복기간
+
+                // 정상납부/미납 상태 표시 (미납일 경우 빨간색)
+                cells[13].textContent = patent.calculatedData.validityStatus;
+                if (patent.calculatedData.validityStatus === '미납') {
+                    cells[13].className = 'text-danger';
+                } else {
+                    cells[13].className = '';
+                }
+
+                // 추납기간 마감일 (빨간색 표시)
+                cells[14].textContent = patent.calculatedData.latePaymentPeriod;
+                if (patent.calculatedData.latePaymentPeriod !== '-') {
+                    cells[14].className = 'deadline-danger';
+                } else {
+                    cells[14].className = '';
+                }
+
+                // 회복기간 마감일 (빨간색 표시)
+                cells[15].textContent = patent.calculatedData.recoveryPeriod;
+                if (patent.calculatedData.recoveryPeriod !== '-') {
+                    cells[15].className = 'deadline-danger';
+                } else {
+                    cells[15].className = '';
+                }
             }
         } else {
             // 등록일이 없는 경우
