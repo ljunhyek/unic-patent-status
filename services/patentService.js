@@ -453,7 +453,10 @@ class PatentService {
                             
                             // 서지상세정보에서 가져온 추가 정보
                             priorityApplicationDate: detailInfo?.priorityApplicationDate || '-',
-                            pctDeadline: this.formatDate(detailInfo?.pctDeadline) || '-',
+                            pctDeadline: this.calculatePctDeadline(
+                                detailInfo?.priorityApplicationDate,
+                                detailInfo?.applicationDate || basicPatent.applicationDate
+                            ),
                             currentStatus: detailInfo?.currentStatus || basicPatent.registrationStatus || '심사중',
 
                             // 공개전문/공고전문 URL
@@ -471,7 +474,7 @@ class PatentService {
                         return {
                             ...basicPatent,
                             priorityApplicationDate: '-',
-                            pctDeadline: '-',
+                            pctDeadline: this.calculatePctDeadline('-', basicPatent.applicationDate),
                             currentStatus: basicPatent.registrationStatus || '심사중',
                             publicationFullText: '-',
                             publicationDocName: '-',
@@ -629,6 +632,59 @@ class PatentService {
         return dateStr;
     }
 
+    // PCT 마감일 계산 (연도만 +1, 월일은 그대로 유지)
+    calculatePctDeadline(priorityDate, applicationDate) {
+        try {
+            // 기준일 결정 (우선일이 있으면 우선일, 없으면 출원일)
+            let baseDate;
+            if (priorityDate && priorityDate !== '-') {
+                baseDate = priorityDate;
+            } else if (applicationDate && applicationDate !== '-') {
+                baseDate = applicationDate;
+            } else {
+                return '-';
+            }
+
+            let year, month, day;
+
+            // 날짜 문자열에서 연도, 월, 일 추출
+            if (baseDate.includes('-')) {
+                // YYYY-MM-DD 형태
+                const parts = baseDate.split('-');
+                year = parseInt(parts[0]);
+                month = parts[1];
+                day = parts[2];
+            } else if (baseDate.includes('.')) {
+                // YYYY.MM.DD 형태
+                const parts = baseDate.split('.');
+                year = parseInt(parts[0]);
+                month = parts[1];
+                day = parts[2];
+            } else if (baseDate.length === 8) {
+                // YYYYMMDD 형태
+                year = parseInt(baseDate.substring(0, 4));
+                month = baseDate.substring(4, 6);
+                day = baseDate.substring(6, 8);
+            } else {
+                return '-';
+            }
+
+            // 연도가 유효한지 확인
+            if (isNaN(year) || year < 1900 || year > 2100) {
+                return '-';
+            }
+
+            // 연도만 +1, 월일은 그대로
+            const newYear = year + 1;
+
+            // YYYY-MM-DD 형태로 포맷팅
+            return `${newYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        } catch (error) {
+            console.error('PCT 마감일 계산 오류:', error);
+            return '-';
+        }
+    }
+
     // 출원번호 포맷팅
     formatApplicationNumber(applicationNumber) {
         if (!applicationNumber || applicationNumber === '-') return '-';
@@ -701,7 +757,16 @@ class PatentService {
                         try {
                             if (result?.response?.body?.item) {
                                 const item = result.response.body.item;
-                                
+
+                                // API 응답 구조 로깅 (디버깅용)
+                                console.log(`🔍 서지정보 API 응답 구조 (${applicationNumber}):`, {
+                                    hasPublicationInfo: !!item.publicationInfoArray,
+                                    hasAnnouncementInfo: !!item.announcementInfoArray,
+                                    hasFullTextInfo: !!item.fullTextInfoArray,
+                                    hasDocumentInfo: !!item.documentInfoArray,
+                                    allKeys: Object.keys(item)
+                                });
+
                                 // 기본 정보 추출
                                 const biblioInfo = item.biblioSummaryInfoArray?.biblioSummaryInfo || {};
                                 const inventorInfo = item.inventorInfoArray?.inventorInfo || {};
@@ -713,12 +778,16 @@ class PatentService {
                                     ? this.getValue(priorityInfoArray[0].priorityApplicationDate)
                                     : this.getValue(priorityInfoArray?.priorityApplicationDate);
 
+                                // PCT 출원번호 정보 추출
+                                const internationalApplicationNumber = this.getValue(biblioInfo.internationalApplicationNumber);
+
                                 console.log(`🎯 상세 정보 추출 성공 (${applicationNumber}):`, {
                                     claimCount: biblioInfo.claimCount,
                                     inventorName: inventorInfo.name,
                                     registerNumber: biblioInfo.registerNumber,
                                     registerDate: biblioInfo.registerDate,
-                                    priorityApplicationDate: priorityApplicationDate
+                                    priorityApplicationDate: priorityApplicationDate,
+                                    internationalApplicationNumber: internationalApplicationNumber
                                 });
 
                                 const detailInfo = {
@@ -746,6 +815,9 @@ class PatentService {
 
                                     // 권리 존속 기간 계산 (등록일 + 20년)
                                     expirationDate: this.calculateExpirationDate(biblioInfo.applicationDate),
+
+                                    // PCT 출원번호 정보 추가
+                                    pctApplicationNumber: internationalApplicationNumber || '-',
 
                                     // 법적 상태 정보
                                     legalStatusInfo: item.legalStatusInfoArray?.legalStatusInfo || []
