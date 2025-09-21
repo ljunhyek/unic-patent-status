@@ -99,7 +99,7 @@
                             <th>해당 연차료 납부마감일</th>
                             <th>해당연차수</th>
                             <th>해당연차료</th>
-                            <th>정상납부/미납</th>
+                            <th>미납여부</th>
                             <th>추납기간 마감</th>
                             <th>회복기간 마감</th>
                         </tr>
@@ -524,9 +524,14 @@ function performNewAnnuityCalculation(discountType) {
                     cells[11].textContent = patent.calculatedData.annualYear; // 해당연차수
                     cells[12].textContent = patent.calculatedData.annualFee; // 해당연차료
 
-                    // 정상납부/미납 상태 표시
-                    cells[13].textContent = patent.calculatedData.validityStatus;
-                    cells[13].className = ''; // 유효 상태는 특별한 스타일 없음
+                    // 미납여부 상태 표시
+                    if (patent.calculatedData.validityStatus === '정상납부') {
+                        cells[13].textContent = '-';
+                        cells[13].className = '';
+                    } else {
+                        cells[13].textContent = patent.calculatedData.validityStatus;
+                        cells[13].className = '';
+                    }
 
                     // 추납기간 마감일 (빨간색 표시)
                     cells[14].textContent = patent.calculatedData.latePaymentPeriod;
@@ -674,11 +679,15 @@ function performNewAnnuityCalculation(discountType) {
                 cells[11].textContent = patent.calculatedData.annualYear; // 해당연차수
                 cells[12].textContent = patent.calculatedData.annualFee; // 해당연차료
 
-                // 정상납부/미납 상태 표시 (미납일 경우 빨간색)
-                cells[13].textContent = patent.calculatedData.validityStatus;
+                // 미납여부 상태 표시 (미납일 경우 빨간색)
                 if (patent.calculatedData.validityStatus === '미납') {
+                    cells[13].textContent = '미납';
                     cells[13].className = 'text-danger';
+                } else if (patent.calculatedData.validityStatus === '정상납부') {
+                    cells[13].textContent = '-';
+                    cells[13].className = '';
                 } else {
+                    cells[13].textContent = patent.calculatedData.validityStatus;
                     cells[13].className = '';
                 }
 

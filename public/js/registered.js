@@ -310,12 +310,12 @@ function displayPaginatedResults() {
 
         // calculatedData가 있는 경우 특별한 스타일 적용
         if (calculatedData) {
-            // 정상납부/미납 컬럼 처리
+            // 미납여부 컬럼 처리
             let validityCell;
             if (calculatedData.validityStatus === '미납') {
                 validityCell = '<td style="color: red; font-weight: bold;">미납</td>';
             } else if (calculatedData.validityStatus === '정상납부') {
-                validityCell = '<td>정상납부</td>';
+                validityCell = '<td>-</td>';
             } else {
                 validityCell = '<td>' + (calculatedData.validityStatus || '-') + '</td>';
             }
