@@ -138,15 +138,15 @@ function displayResults(data) {
     // 모든 데이터를 가져온 후 화면 표시시에만 필터링
     const allPatents = data.patents || [];
 
-    // 등록번호가 30 또는 40으로 시작하는 항목 제외
+    // 등록번호가 3 또는 4로 시작하는 항목 제외
     const filteredPatents = allPatents.filter(patent => {
         const registrationNumber = patent.registrationNumber || '';
         const cleanedRgstNo = registrationNumber.replace(/-/g, '');
-        const firstTwo = cleanedRgstNo.substring(0, 2);
-        const shouldExclude = firstTwo === '30' || firstTwo === '40';
+        const firstDigit = cleanedRgstNo.charAt(0);
+        const shouldExclude = firstDigit === '3' || firstDigit === '4';
 
         if (shouldExclude) {
-            console.log(`🚫 화면 표시에서 제외: ${registrationNumber} (${firstTwo}로 시작)`);
+            console.log(`🚫 화면 표시에서 제외: ${registrationNumber} (${firstDigit}로 시작)`);
         }
 
         return !shouldExclude;
